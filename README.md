@@ -4,7 +4,7 @@ An implementation of an imperative langauge for real number computation.
 
 ## Prerequisites
 
-### Coq files
+### Coq formalization
 
 To compile the Coq formalization you just need a fairly recent version of Coq.
 The code compiles with Coq 8.6, but it is likely that older versions are ok.
@@ -18,12 +18,17 @@ To compile the OCaml implementation of Clerical you need OCaml and
 * the `sedlex` OCaml package
 * the `mlgmpidl` OCaml package
 
-MPFR is aviable through various package managers. On OSX you can install it using
+MPFR is aviable through various package managers. On macOS you can install it using
 [Homebrew](https://brew.sh):
 
     brew install mpfr
 
-It is easy to get the OCaml dependencies with [OPAM]:
+It is easy to get the OCaml dependencies with [OPAM], the OCaml package manager. First
+install OPAM, for example on macOS you can use Homebrew:
+
+    brew install opam
+
+Then install OCaml dependencies:
 
     opam install menhir
     opam install sedlex
@@ -45,5 +50,4 @@ To compile Clerical, run
 The structure of the repository:
 
 * `src` – the OCaml implementation of Clerical
-* `coq` – the Coq formalization of the language
-* `doc` – various documents
+* `formalization` – the Coq formalization of the language
