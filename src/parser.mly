@@ -73,7 +73,6 @@ commandline:
 (* Things that can be defined on toplevel. *)
 topcomp: mark_location(plain_topcomp) { $1 }
 plain_topcomp:
-  | LET lst=separated_nonempty_list(AND, let_clause)        { TopLet lst }
   | FUNCTION f=var_name LPAREN xs=fun_args RPAREN COLON c=term
                                                             { TopFunction (f, xs, c) }
   | EXTERNAL f=var_name COLON ft=funty EQ s=QUOTED_STRING   { TopExternal (f, s, ft) }

@@ -34,7 +34,6 @@ and comp' =
 type toplevel = toplevel' Location.located
 and toplevel' =
   | TopDo of comp
-  | TopLet of (Name.ident * comp) list
   | TopFunction of Name.ident * (Name.ident * valty) list * comp
   | TopExternal of Name.ident * string * funty
   | TopLoad of string

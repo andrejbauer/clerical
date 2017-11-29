@@ -27,7 +27,6 @@ and comp' =
 type toplevel = toplevel' Location.located
 and toplevel' =
   | TopDo of comp
-  | TopLet of (Name.ident * comp) list
   | TopFunction of Name.ident * (Name.ident * Type.valty) list * comp
   | TopExternal of Name.ident * string * Type.funty
   | TopFile of toplevel list
@@ -37,7 +36,6 @@ and toplevel' =
 type tytoplevel = tytoplevel' Location.located
 and tytoplevel' =
   | TyTopDo of comp * Type.cmdty
-  | TyTopLet of (Name.ident * comp * Type.valty) list
   | TyTopFunction of Name.ident * (Name.ident * Type.valty) list * comp * Type.cmdty
   | TyTopExternal of Name.ident * string * Type.funty
   | TyTopFile of tytoplevel list

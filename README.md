@@ -51,3 +51,4 @@ The structure of the repository:
 
 * `src` – the OCaml implementation of Clerical
 * `formalization` – the Coq formalization of the language
+* `doc` – documentation

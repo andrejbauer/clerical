@@ -181,17 +181,6 @@ let rec toplevel' ctx = function
        let c = comp ctx c in
        ctx, Syntax.TopDo c
 
-    | Input.TopLet lst ->
-       let ctx, _, lst =
-         List.fold_left
-           (fun (ctx', k, lst) (x, c) ->
-             let c = comp ctx c in
-             add_ident x ctx', (k-1), (x, c) :: lst)
-           (ctx, List.length lst - 1, []) lst
-       in
-       let lst = List.rev lst in
-       ctx, Syntax.TopLet lst
-
     | Input.TopFunction (f, xts, c) ->
        let c = comp (add_args xts ctx) c
        and xts = List.map (fun (x, t) -> (x, valty t)) xts in

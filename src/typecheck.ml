@@ -225,18 +225,6 @@ and toplevel' ctx = function
      let t = comp ctx c in
      ctx, Syntax.TyTopDo (c, t)
 
-  | Syntax.TopLet lst ->
-     let rec fold ctx' lst' = function
-       | [] -> ctx', List.rev lst'
-       | (x, e) :: lst ->
-          let t = expr ctx e in
-          let ctx' = push_ro t ctx'
-          and lst' = (x, e, t) :: lst' in
-          fold ctx' lst' lst
-     in
-     let ctx, lst = fold ctx [] lst in
-     ctx, Syntax.TyTopLet lst
-
   | Syntax.TopFunction (f, xts, c) ->
      let t = comp (push_args xts ctx) c in
      let ft = (List.map snd xts, t) in

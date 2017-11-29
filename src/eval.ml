@@ -268,20 +268,6 @@ let rec toplevel ~quiet runtime {Location.data=c; Location.loc} =
          (Type.print_cmdty t) ;
      runtime
 
-  | Syntax.TyTopLet lst ->
-     let runtime, vs = toplet_clauses runtime lst in
-     if not quiet then
-       begin
-         List.iter2
-           (fun (x, _, t) v ->
-             Format.printf "%s : %t = %t@."
-               x
-               (Value.print_value v)
-               (Type.print_valty t))
-           lst vs
-       end ;
-     runtime
-
   | Syntax.TyTopFunction (f, xts, c, t) ->
      let runtime = topfun runtime xts c in
      if not quiet then
