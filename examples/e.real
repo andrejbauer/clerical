@@ -1,0 +1,15 @@
+(* Euler's number *)
+function e ():
+  lim n =>
+    begin
+      let err = shift(1, n) in
+      var i := 1
+      and e := 0.0
+      and f := 1 in
+      while f <= err do
+        e := e +. 1.0 /. (real)f ;
+        f := f * i ;
+        i := i + 1
+      end ;
+      e
+    end
