@@ -23,8 +23,8 @@ MPFR is aviable through various package managers. On macOS you can install it us
 
     brew install mpfr
 
-It is easy to get the OCaml dependencies with [OPAM], the OCaml package manager. First
-install OPAM, for example on macOS you can use Homebrew:
+It is easy to get the OCaml dependencies with [OPAM](https://opam.ocaml.org), the OCaml
+package manager. First install OPAM, for example on macOS you can use Homebrew:
 
     brew install opam
 
