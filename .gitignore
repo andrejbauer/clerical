@@ -1,0 +1,7 @@
+*.glob
+*.vo
+*.v.d
+/coq/Makefile
+_build
+/clerical.native
+*.native
