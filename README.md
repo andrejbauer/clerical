@@ -59,5 +59,5 @@ The structure of the repository:
 Please consult:
 
 * [`doc/syntax.md`](doc/syntax.md) for a brief explanation of the syntax
-* [`examples`](doc/examples) for examples of Clerical programs
+* [`examples`](examples) for examples of Clerical programs
 * [`prelude.real`)(./prelude.real) for the built-in functions and operators
