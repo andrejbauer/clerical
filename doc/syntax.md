@@ -39,7 +39,7 @@ Functions may *not* be recursive, but they may refer to previously defined funct
 
 To extend Clerical with a new primitive function, define its OCaml implementation in `src/external.ml`. In Clerical you can then bind the OCaml definition to Clerical with
 
-    external ⟨funcName⟩ : (⟨ty1⟩, .., ⟨tyN⟩) -⟩ ⟨ty_ret⟩ = "⟨str⟩"
+    external ⟨funcName⟩ : (⟨ty1⟩, .., ⟨tyN⟩) -> ⟨ty_ret⟩ = "⟨str⟩"
 
 where:
 
