@@ -133,26 +133,26 @@ let real_cmp r1 r2 =
   then 1
   else raise Runtime.Abort
 
-let two = Dyadic.dyadic(Z.one, 1)
-let half = Dyadic.dyadic(Z.one, -1)
+let two : Mpfr.t = snd (Mpfr.init_set_d 2.0 Mpfr.Near)
+let half : Mpfr.t = snd (Mpfr.init_set_d 0.5 Mpfr.Near)
 
+(* Shift [k] by [j] places to the left (or right if [j] is negative. *)
 let shift k j =
-  let j = Z.to_int j in
-  if j >= 0 then
-    Z.shift_left k j
-  else
-    Z.shift_right k (-j)
+  let m = Mpz.init () in
+  let j = Mpz.get_int j in
+  Mpz.mul_2exp m k j ;
+  Mpzf._mpzf m
 
 let externals : (string * entry) list = [
-  make_III "+" (fun k1 k2 -> Z.add k1 k2) ;
-  make_III "-" (fun k1 k2 -> Z.sub k1 k2) ;
-  make_III "*" (fun k1 k2 -> Z.mul k1 k2) ;
-  make_IIB "<" (fun k1 k2 -> Z.compare k1 k2 < 0) ;
-  make_IIB ">" (fun k1 k2 -> Z.compare k1 k2 > 0) ;
-  make_IIB "<=" (fun k1 k2 -> Z.compare k1 k2 <= 0) ;
-  make_IIB ">=" (fun k1 k2 -> Z.compare k1 k2 >= 0) ;
-  make_IIB "<>" (fun k1 k2 -> Z.compare k1 k2 <> 0) ;
-  make_IIB "==" (fun k1 k2 -> Z.compare k1 k2 = 0) ;
+  make_III "+" (fun k1 k2 -> Mpzf.add k1 k2) ;
+  make_III "-" (fun k1 k2 -> Mpzf.sub k1 k2) ;
+  make_III "*" (fun k1 k2 -> Mpzf.mul k1 k2) ;
+  make_IIB "<" (fun k1 k2 -> Mpzf.cmp k1 k2 < 0) ;
+  make_IIB ">" (fun k1 k2 -> Mpzf.cmp k1 k2 > 0) ;
+  make_IIB "<=" (fun k1 k2 -> Mpzf.cmp k1 k2 <= 0) ;
+  make_IIB ">=" (fun k1 k2 -> Mpzf.cmp k1 k2 >= 0) ;
+  make_IIB "<>" (fun k1 k2 -> Mpzf.cmp k1 k2 <> 0) ;
+  make_IIB "==" (fun k1 k2 -> Mpzf.cmp k1 k2 = 0) ;
   make_BB  "not" (fun b -> not b) ;
   make_RRR "+." (fun ~prec r1 r2 -> Real.add ~prec ~round:Real.down r1 r2);
   make_RRR "-." (fun ~prec r1 r2 -> Real.sub ~prec ~round:Real.down r1 r2);

@@ -7,7 +7,7 @@
 
 (* Names and constants *)
 %token <Name.ident> NAME
-%token <Z.t> NUMERAL
+%token <Mpzf.t> NUMERAL
 %token <string> FLOAT
 %token <bool> BOOLEAN
 

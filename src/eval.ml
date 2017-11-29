@@ -188,14 +188,14 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
      end
 
   | Syntax.Lim e ->
-     let stack' = push_ro (Value.VInteger (Z.of_int prec)) stack in
+     let stack' = push_ro (Value.VInteger (Mpzf.of_int prec)) stack in
      let v = comp_ro ~prec stack' e in
      begin match Value.computation_as_real v with
      | None -> Runtime.error ~loc:e.Location.loc Runtime.RealExpected
      | Some r ->
-           let err = Dyadic.shift ~prec ~round:Dyadic.Up Dyadic.one (-prec) in
-           let rl = Dyadic.sub ~prec ~round:Dyadic.Down (Real.lower r) err
-           and ru = Dyadic.add ~prec ~round:Dyadic.Up (Real.upper r) err in
+           let err = Dyadic.shift ~prec ~round:Dyadic.up Dyadic.one (-prec) in
+           let rl = Dyadic.sub ~prec ~round:Dyadic.down (Real.lower r) err
+           and ru = Dyadic.add ~prec ~round:Dyadic.up (Real.upper r) err in
            let r = Real.make rl ru in
            stack, Value.CReal r
      end

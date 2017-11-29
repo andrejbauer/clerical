@@ -17,7 +17,7 @@ type comp = comp' Location.located
 and comp' =
   | Var of Name.ident
   | Boolean of bool
-  | Integer of Z.t
+  | Integer of Mpzf.t
   | Float of string (* store the string so we can correctly round later *)
   | CastReal of comp
   | Apply of operator * comp list
@@ -38,4 +38,4 @@ and toplevel' =
   | TopFunction of Name.ident * (Name.ident * valty) list * comp
   | TopExternal of Name.ident * string * funty
   | TopLoad of string
-  | TopPrecision of Z.t
+  | TopPrecision of Mpzf.t
