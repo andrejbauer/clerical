@@ -26,11 +26,11 @@ The return type of `⟨functionName⟩` is computed automatically. Example:
 
     function power(real x, int k):
        var i := 0
-       and p := 1.0
-         while i ⟨ k do
+       and p := 1.0 in
+         while i < k do
            p := p *. x ;
            i := i + 1
-         done ;
+         end ;
          p
 
 Functions may *not* be recursive, but they may refer to previously defined functions.
@@ -60,13 +60,13 @@ The toplevel command
 
 evaluates command `⟨cmd⟩`. For example:
 
-    do 1.0 + 3.0
+    do 1.0 +. 3.0
 
 ### Setting precision
 
 You can set the *initial* precision at which a toplevel command is computed with
 
-    precisions ⟨int⟩
+    precision ⟨int⟩
 
 where `⟨int⟩` is the precision at which MPFR will compute. It has to be at least 2.
 

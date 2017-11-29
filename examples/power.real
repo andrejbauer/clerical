@@ -1,0 +1,9 @@
+(* A naive power function which just iterates multiplication. *)
+function power(real x, int k):
+   var i := 0
+   and p := 1.0 in
+     while i < k do
+       p := p *. x ;
+       i := i + 1
+     end ;
+     p
