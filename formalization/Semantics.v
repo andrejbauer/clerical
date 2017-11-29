@@ -1,7 +1,7 @@
 Require Import ZArith.
 Require Coq.Program.Equality.
 
-Require Import Koreal.
+Require Import Clerical.
 Require Import Typing.
 
 Definition sem_datatype (τ : datatype) : Type :=

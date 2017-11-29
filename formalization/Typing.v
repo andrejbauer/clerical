@@ -1,6 +1,6 @@
-(** Koreal typing judgments *)
+(** Clerical typing judgments *)
 
-Require Import Koreal.
+Require Import Clerical.
 
 (* A typing context. *)
 Structure ctx := {
@@ -21,7 +21,7 @@ Definition readonly Γ :=
     ctx_ro := cons (ctx_rw Γ) (ctx_ro Γ)
   |}.
 
-Open Scope koreal_scope.
+Open Scope clerical_scope.
 
 Inductive is_writable : list datatype -> nat -> datatype -> Type :=
   | is_writable_0 :

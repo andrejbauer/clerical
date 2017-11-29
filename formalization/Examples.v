@@ -1,8 +1,8 @@
 Require Import ZArith.
-Require Import Koreal.
+Require Import Clerical.
 Require Import OperationalSemantics.
 
-Open Scope koreal_scope.
+Open Scope clerical_scope.
 
 Definition Example1 :=
   (NEWVAR (INT 1 :+: INT 2 :+: INT 3) IN
