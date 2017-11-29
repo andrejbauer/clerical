@@ -1,7 +1,8 @@
 *.glob
 *.vo
 *.v.d
-/coq/Makefile
+/formalization/Makefile
 _build
 /clerical.native
 *.native
+/formalization/Makefile.conf

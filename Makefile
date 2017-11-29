@@ -1,5 +1,5 @@
 COQMAKEFILE = coq_makefile
-COQSRC = coq
+COQSRC = formalization
 
 OCAMLBUILD = ocamlbuild
 OCAMLBUILD_FLAGS = -j 4 -use-ocamlfind -pkg menhirLib -pkg sedlex -pkg gmp -pkg zarith
@@ -13,7 +13,7 @@ default: clerical.native
 ### Compilation of Coq files
 
 $(COQSRC)/Makefile: $(COQSRC)/_CoqProject
-	cd $(COQSRC) && $(COQMAKEFILE) -f _CoqProject > Makefile
+	cd $(COQSRC) && $(COQMAKEFILE) -f _CoqProject
 
 coq_code: $(COQSRC)/Makefile
 	$(MAKE) -C $(COQSRC)

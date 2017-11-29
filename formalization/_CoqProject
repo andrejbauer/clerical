@@ -1,9 +1,9 @@
--R . ""
+-R clerical/ clerical -o Makefile
 
-Delay.v
-Koreal.v
-OperationalSemantics.v
-Typing.v
-Semantics.v
-Examples.v
+clerical/Delay.v
+clerical/Clerical.v
+clerical/OperationalSemantics.v
+clerical/Typing.v
+clerical/Semantics.v
+clerical/Examples.v
 
