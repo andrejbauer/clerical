@@ -1,0 +1,5 @@
+true: bin_annot
+<src/**>: include
+<src/*.ml>: package(gmp)
+<src/*.ml>: package(zarith)
+
