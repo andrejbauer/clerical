@@ -263,9 +263,13 @@ let rec toplevel ~quiet runtime {Location.data=c; Location.loc} =
   | Syntax.TyTopDo (c, t) ->
      let v = topcomp ~max_prec:!Config.max_prec runtime c in
      if not quiet then
-       Format.printf "%t : %t@."
-         (Value.print_result v)
-         (Type.print_cmdty t) ;
+       begin match t with
+       | Type.Command -> ()
+       | Type.Data dt ->
+          Format.printf "%t : %t@."
+            (Value.print_result v)
+            (Type.print_valty dt)
+       end ;
      runtime
 
   | Syntax.TyTopFunction (f, xts, c, t) ->
