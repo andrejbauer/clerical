@@ -41,6 +41,7 @@
 %token EOF
 
 (* Precedence and fixity of infix operators *)
+%nonassoc DARROW
 %nonassoc IN
 %right    SEMICOLON
 %nonassoc ELSE
@@ -96,7 +97,7 @@ plain_term:
   | LET a=separated_nonempty_list(AND,let_clause) IN c=term     { Let (a, c) }
   | VAR a=separated_nonempty_list(AND,var_clause) IN c=term     { Newvar (a, c) }
   | x=var_name COLONEQ e=op_term                                { Assign (x, e) }
-  | LIM x=var_name DARROW e=op_term                             { Lim (x, e) }
+  | LIM x=var_name DARROW e=term                                { Lim (x, e) }
 
 op_term: mark_location(plain_op_term) { $1 }
 plain_op_term:

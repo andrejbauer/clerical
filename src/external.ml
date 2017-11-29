@@ -119,7 +119,7 @@ let make_BBB s f =
     fun ~prec ->
     function
       | [v1; v2] ->
-         begin match Value.value_as_boolean v1, Value.value_as_integer v2 with
+         begin match Value.value_as_boolean v1, Value.value_as_boolean v2 with
          | Some b1, Some b2 -> Value.CBoolean (f b1 b2)
          | None, _ | _, None -> Runtime.error ~loc:Location.nowhere (Runtime.InvalidExternal s)
          end
@@ -154,6 +154,8 @@ let externals : (string * entry) list = [
   make_IIB "<>" (fun k1 k2 -> Mpzf.cmp k1 k2 <> 0) ;
   make_IIB "==" (fun k1 k2 -> Mpzf.cmp k1 k2 = 0) ;
   make_BB  "not" (fun b -> not b) ;
+  make_BBB "&&" ( && ) ;
+  make_BBB "||" ( || ) ;
   make_RRR "+." (fun ~prec r1 r2 -> Real.add ~prec ~round:Real.down r1 r2);
   make_RRR "-." (fun ~prec r1 r2 -> Real.sub ~prec ~round:Real.down r1 r2);
   make_RRR "*." (fun ~prec r1 r2 -> Real.mul ~prec ~round:Real.down r1 r2);
