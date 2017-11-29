@@ -1,7 +1,6 @@
-# Koreal
+# Clerical
 
-An implementation of an imperative langauge for real number computation, based on
-discussions between Sewon Park, Alex Simpson and Andrej Bauer in November 2017.
+An implementation of an imperative langauge for real number computation.
 
 ## Prerequisites
 
