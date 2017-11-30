@@ -14,7 +14,18 @@ let push_ro v st = {st with frame = RO v :: st.frame}
 let push_fun f stack =
   { stack with funs = f :: stack.funs }
 
+(** Push many read-only values *)
 let push_ros vs st = List.fold_left (fun st v -> push_ro v st) st vs
+
+(** Pop values from stack *)
+let pop stack k =
+  let rec remove k lst =
+    match k, lst with
+    | 0, lst -> lst
+    | k, _ :: lst -> remove (k-1) lst
+    | _, [] -> Runtime.error ~loc:Location.nowhere (Runtime.InternalError "pop")
+  in
+  {stack with frame = remove k stack.frame}
 
 (** Lookup a value on the stack *)
 let lookup_val k {frame; frames; _} =
@@ -162,7 +173,8 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
           fold stack' lst
      in
      let stack = fold stack lst in
-     comp ~prec stack c
+     let stack, v = comp ~prec stack c in
+     pop stack (List.length lst), v
 
   | Syntax.Let (lst, c) ->
      let rec fold stack' = function
@@ -173,7 +185,8 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
           fold stack' lst
      in
      let stack = fold stack lst in
-     comp ~prec stack c
+     let stack, v = comp ~prec stack c in
+     pop stack (List.length lst), v
 
   | Syntax.Assign (k, e) ->
      begin match lookup_ref k stack with

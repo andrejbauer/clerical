@@ -24,6 +24,7 @@ type runtime_error =
   | InvalidFunction
   | InvalidExternal of string
   | UnknownExternal of string
+  | InternalError of string
 
 exception Error of runtime_error Location.located
 
@@ -50,6 +51,7 @@ let rec print_error err ppf =
   | InvalidFunction -> Format.fprintf ppf "invalid function application"
   | InvalidExternal s -> Format.fprintf ppf "invalid application of %s" s
   | UnknownExternal s ->  Format.fprintf ppf "unknown external function %s" s
+  | InternalError s -> Format.fprintf ppf "internal error (%s)" s
 
 (** A stack entry *)
 type entry =

@@ -5,7 +5,6 @@ type index = int
 
 type operator = string
 
-(* TODO add reals *)
 type comp = comp' Location.located
 and comp' =
   | Var of index
