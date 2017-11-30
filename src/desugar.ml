@@ -103,6 +103,9 @@ let rec comp ctx {Location.data=c; Location.loc=loc} =
     | Input.Skip ->
        Syntax.Skip
 
+    | Input.Trace ->
+       Syntax.Trace
+
     | Input.Sequence (c1, c2) ->
        let c1 = comp ctx c1
        and c2 = comp ctx c2 in
@@ -136,7 +139,7 @@ let rec comp ctx {Location.data=c; Location.loc=loc} =
          | (x,c) :: lst ->
             let c = comp ctx c in
             let ctx' = add_ident x ctx'
-            and lst' = c :: lst' in
+            and lst' = (x,c) :: lst' in
             fold ctx' lst' lst
        in
        let ctx, lst = fold ctx [] lst in
@@ -149,7 +152,7 @@ let rec comp ctx {Location.data=c; Location.loc=loc} =
          | (x,c) :: lst ->
             let c = comp ctx c in
             let ctx' = add_ident x ctx'
-            and lst' = c :: lst' in
+            and lst' = (x,c) :: lst' in
             fold ctx' lst' lst
        in
        let ctx, lst = fold ctx [] lst in
@@ -167,7 +170,7 @@ let rec comp ctx {Location.data=c; Location.loc=loc} =
     | Input.Lim (x, e) ->
        let ctx = add_ident x ctx in
        let e = comp ctx e in
-       Syntax.Lim e
+       Syntax.Lim (x, e)
   in
   let c = comp' ctx c in
   Location.locate ~loc c

@@ -18,3 +18,5 @@ let columns = ref (Format.get_margin ())
 let init_prec = ref 16
 
 let max_prec = ref 2048
+
+let trace = ref false

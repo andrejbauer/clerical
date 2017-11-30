@@ -18,10 +18,11 @@ and comp' =
   | Case of (comp * comp) list
   | If of comp * comp * comp
   | While of comp * comp
-  | Let of comp list * comp
-  | Newvar of comp list * comp
+  | Let of (Name.ident * comp) list * comp
+  | Newvar of (Name.ident * comp) list * comp
   | Assign of index * comp
-  | Lim of comp
+  | Lim of Name.ident * comp
+  | Trace
 
 type toplevel = toplevel' Location.located
 and toplevel' =

@@ -22,6 +22,7 @@ let reserved = [
   ("precision", PRECISION) ;
   ("skip", SKIP) ;
   ("then", THEN) ;
+  ("trace", TRACE) ;
   ("true", BOOLEAN true) ;
   ("var", VAR) ;
   ("while", WHILE)

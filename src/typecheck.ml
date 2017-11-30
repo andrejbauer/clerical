@@ -123,6 +123,9 @@ let rec comp ctx {Location.data=c; loc} =
   | Syntax.Skip ->
      Type.Command
 
+  | Syntax.Trace ->
+     Type.Command
+
   | Syntax.Sequence (c1, c2) ->
      check_comp ctx Type.Command c1 ;
      comp ctx c2
@@ -167,7 +170,7 @@ let rec comp ctx {Location.data=c; loc} =
        | Some dt -> check_expr ctx dt e ; Type.Command
      end
 
-  | Syntax.Lim e ->
+  | Syntax.Lim (_, e) ->
      let ctx = push_ro Type.Integer ctx in
      check_expr ctx Type.Real e ;
      Type.Data (Type.Real)
@@ -199,7 +202,7 @@ and check_args ~loc ctx dts cs =
 and let_clauses ctx lst =
   let rec fold ctx' = function
     | [] -> ctx'
-    | c :: cs ->
+    | (_,c) :: cs ->
        let t = expr ctx c in
        let ctx' = push_ro t ctx' in
        fold ctx' cs
@@ -209,7 +212,7 @@ and let_clauses ctx lst =
 and newvar_clauses ctx lst =
   let rec fold ctx' = function
     | [] -> ctx'
-    | c :: cs ->
+    | (_,c) :: cs ->
        let t = expr ctx c in
        let ctx' = push_rw t ctx' in
        fold ctx' cs

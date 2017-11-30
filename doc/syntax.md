@@ -79,6 +79,16 @@ You may load a file into Clerical with
 Alternatively, you can load it on the command line with `-l` option. Run Clerical with
 `--help` to see other command-line options.
 
+## Support for debugging
+
+Anywhere in your code you may run the command `trace` which behaves exactly like `skip`
+(see below), except that it also prints out the current source position, precision, and
+values of all variables.
+
+If you use the command-line opton `--trace`, a trace will be printed for *every*
+expression that is evaluated. This gives a lot of output, but it may help track what is
+going on.
+
 ## Syntax of expressions
 
 ### Variables
@@ -95,11 +105,11 @@ They may contain digits, and they may end in any number of `'`.
 Note that `42` is always an integer, and `42.0` is always a real. There is no automatic
 conversion from integers to reals.
 
-### `skip`
+### Command `skip`
 
 Skip does not do anything.
 
-### `c₁ ; c₂`
+### Sequencing `c₁ ; c₂`
 
 Do `c₁` then do `c₂`.
 

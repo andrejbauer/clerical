@@ -54,7 +54,11 @@ let options = Arg.align [
 
     ("--max_prec",
      Arg.Set_int Config.max_prec,
-     "<int> Set maximum precision for real numbers")
+     "<int> Set maximum precision for real numbers");
+
+    ("--trace",
+     Arg.Set Config.trace,
+     " Print trace information during evaluation")
   ]
 
 (** Interactive toplevel *)

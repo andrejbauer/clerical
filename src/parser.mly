@@ -24,7 +24,7 @@
 
 (* Commands *)
 %token BEGIN END
-%token SKIP
+%token SKIP TRACE
 %token WHILE DO
 %token CASE
 %token IF THEN ELSE
@@ -124,6 +124,7 @@ plain_simple_term:
   | r=FLOAT                    { Float r }
   | b=BOOLEAN                  { Boolean b }
   | SKIP                       { Skip }
+  | TRACE                      { Trace }
   | LPAREN c=plain_term RPAREN { c }
   | BEGIN c=plain_term END     { c }
 

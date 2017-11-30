@@ -63,8 +63,8 @@ type precision = int
 (** The top frame is the one that we can write into, all
     the other frames are read-only. *)
 type stack = {
-    frame : entry list ;
-    frames : entry list list ;
+    frame : (Name.ident * entry) list ;
+    frames : (Name.ident * entry) list list ;
     funs : (loc:Location.t -> prec:precision -> Value.value list -> Value.result) list
 }
 

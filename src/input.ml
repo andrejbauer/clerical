@@ -30,6 +30,7 @@ and comp' =
   | Newvar of (Name.ident * comp) list * comp
   | Assign of Name.ident * comp
   | Lim of Name.ident * comp
+  | Trace
 
 type toplevel = toplevel' Location.located
 and toplevel' =

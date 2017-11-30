@@ -5,17 +5,17 @@ let make_ro {frame; frames; funs} =
   {frame = [] ; frames = frame :: frames; funs = funs}
 
 (** Push a read-write value onto the top frame. *)
-let push_rw v st = {st with frame = RW (ref v) :: st.frame}
+let push_rw x v st = { st with frame = (x, RW (ref v)) :: st.frame }
 
 (** Push a read-only value onto the top frame. *)
-let push_ro v st = {st with frame = RO v :: st.frame}
+let push_ro x v st = { st with frame = (x, RO v) :: st.frame }
 
 (** Define a new function. *)
 let push_fun f stack =
   { stack with funs = f :: stack.funs }
 
 (** Push many read-only values *)
-let push_ros vs st = List.fold_left (fun st v -> push_ro v st) st vs
+let push_ros xs vs st = List.fold_left2 (fun st x v -> push_ro x v st) st xs vs
 
 (** Pop values from stack *)
 let pop stack k =
@@ -31,8 +31,8 @@ let pop stack k =
 let lookup_val k {frame; frames; _} =
   let rec lookup k vs vss =
     match k, vs, vss with
-    | 0, (RO v :: _), _ -> Some v
-    | 0, (RW r :: _), _ -> Some !r
+    | 0, ((_, RO v) :: _), _ -> Some v
+    | 0, ((_, RW r) :: _), _ -> Some !r
     | k, [], (vs :: vss) -> lookup k vs vss
     | k, [], [] -> None
     | k, (_ :: vs), vss -> lookup (k-1) vs vss
@@ -43,8 +43,8 @@ let lookup_val k {frame; frames; _} =
 let lookup_ref k {frame; _} =
   let rec lookup k vs =
     match k, vs  with
-    | 0, (RO v :: _) -> None
-    | 0, (RW r :: _) -> Some r
+    | 0, ((_, RO v) :: _) -> None
+    | 0, ((_, RW r) :: _) -> Some r
     | k, [] -> None
     | k, (_ :: vs) -> lookup (k-1) vs
   in
@@ -59,6 +59,26 @@ let lookup_fun k {funs; _} =
     | k, _ :: fs -> lookup (k-1) fs
   in
   lookup k funs
+
+(** Print trace *)
+let print_trace ~loc ~prec {frame;frames;_} =
+  let xvs = frame @ List.flatten frames in
+  Print.message ~loc "Trace"
+    "\tprecision: %d@\n\t%t@."
+    prec
+    (fun ppf ->
+      Format.pp_print_list
+        ~pp_sep:(fun ppf () -> Format.fprintf ppf "@\n\t")
+        (fun ppf (x,entry) ->
+          let v = (match entry with
+                   | Runtime.RO v -> v
+                   | Runtime.RW r -> !r)
+          in
+          Format.fprintf ppf "%s:\t%t" x (Value.print_value v))
+        ppf
+        xvs)
+
+(** Extraction of values with expected type *)
 
 let as_integer ~loc v =
   match Value.computation_as_integer v with
@@ -83,6 +103,7 @@ let as_value ~loc v =
 (** [comp n stack c] evaluates computation [c] in the given [stack] at
     precision level [n], and returns the new stack and the computed value. *)
 let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result =
+  if !Config.trace then print_trace ~loc ~prec stack ;
   begin match c with
 
   | Syntax.Var k ->
@@ -124,6 +145,10 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
 
   | Syntax.Skip ->
      stack, Value.CNone
+
+  | Syntax.Trace ->
+     print_trace ~loc ~prec stack ;
+     (stack, Value.CNone)
 
   | Syntax.Sequence (c1, c2) ->
      let stack, v1 = comp ~prec stack c1 in
@@ -167,9 +192,9 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
   | Syntax.Newvar (lst, c) ->
      let rec fold stack' = function
        | [] -> stack'
-       | e :: lst ->
+       | (x,e) :: lst ->
           let v = comp_ro_value ~prec stack e in
-          let stack' = push_rw v stack' in
+          let stack' = push_rw x v stack' in
           fold stack' lst
      in
      let stack = fold stack lst in
@@ -179,9 +204,9 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
   | Syntax.Let (lst, c) ->
      let rec fold stack' = function
        | [] -> stack'
-       | e :: lst ->
+       | (x, e) :: lst ->
           let v = comp_ro_value ~prec stack e in
-          let stack' = push_ro v stack' in
+          let stack' = push_ro x v stack' in
           fold stack' lst
      in
      let stack = fold stack lst in
@@ -200,8 +225,8 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
         end
      end
 
-  | Syntax.Lim e ->
-     let stack' = push_ro (Value.VInteger (Mpzf.of_int prec)) stack in
+  | Syntax.Lim (x, e) ->
+     let stack' = push_ro x (Value.VInteger (Mpzf.of_int prec)) stack in
      let v = comp_ro ~prec stack' e in
      begin match Value.computation_as_real v with
      | None -> Runtime.error ~loc:e.Location.loc Runtime.RealExpected
@@ -244,18 +269,19 @@ let toplet_clauses stack lst =
     | (x, e, t) :: lst ->
        let v = topcomp ~max_prec:!Config.max_prec stack e in
        let v = as_value ~loc:(e.Location.loc) v in
-       let stack' = push_ro v stack' in
+       let stack' = push_ro x v stack' in
        let vs = v :: vs in
        fold stack' vs lst
   in
   fold stack [] lst
 
-let topfun stack xts c =
+let topfun stack xs c =
   let g ~loc ~prec vs =
     try
-      comp_ro ~prec (push_ros vs stack) c
+      comp_ro ~prec (push_ros xs vs stack) c
     with
-    | Error {Location.data=err; loc=loc'} -> raise (Error (Location.locate ~loc:loc' (CallTrace (loc, err))))
+    | Error {Location.data=err; loc=loc'} ->
+       raise (Error (Location.locate ~loc:loc' (CallTrace (loc, err))))
   in
   push_fun g stack
 
@@ -286,7 +312,7 @@ let rec toplevel ~quiet runtime {Location.data=c; Location.loc} =
      runtime
 
   | Syntax.TyTopFunction (f, xts, c, t) ->
-     let runtime = topfun runtime xts c in
+     let runtime = topfun runtime (List.map fst xts) c in
      if not quiet then
        Format.printf "function %s : %t@." f (Type.print_funty (List.map snd xts, t)) ;
      runtime
