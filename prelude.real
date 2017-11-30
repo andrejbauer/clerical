@@ -33,6 +33,7 @@ external ( || ) : (bool, bool) -> bool = "||"
 (* Conversion *)
 
 external real : (int) -> real = "real"
+external int : (real) -> int = "int"
 
 (* Real-valued arithmetic *)
 external ( +. ) : (real, real) -> real = "+."

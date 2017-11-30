@@ -110,6 +110,11 @@ conversion from integers to reals.
 
 The prelude defines a function `real` that takes an integer and returns a real.
 
+### Rounding a `real` to a nearby `int`
+
+The prelude defines a function `int` that takes a real and returns an integer
+that is within 1 of the real.
+
 ### Command `skip`
 
 Skip does not do anything.

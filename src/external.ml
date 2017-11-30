@@ -34,6 +34,18 @@ let make_IR s f =
     | [] | _ :: _ :: _ -> Runtime.error ~loc:Location.nowhere (Runtime.InvalidExternal s)
   end
 
+let make_RI s f =
+  s,
+  begin
+    fun ~prec ->
+    function
+    | [v] ->
+       begin match Value.value_as_real v with
+       | Some r -> Value.CInteger (f ~prec r)
+       | None -> Runtime.error ~loc:Location.nowhere (Runtime.InvalidExternal s)
+       end
+    | [] | _ :: _ :: _ -> Runtime.error ~loc:Location.nowhere (Runtime.InvalidExternal s)
+  end
 
 let make_RR s f =
   s,
@@ -141,6 +153,19 @@ let to_real ~prec k =
   and ru = Dyadic.of_integer ~prec:prec ~round:Dyadic.up k in
   Real.make rl ru
 
+let to_int ~prec r =
+  let err = Real.width ~prec ~round:Real.up r  in
+  if Dyadic.lt err Dyadic.one
+  then
+    let mid = Real.midpoint ~prec 0 r in
+    let z = Mpz.init () in
+    Mpfr.get_z z mid Mpfr.Near ;
+    Mpzf._mpzf z
+  else
+    raise Runtime.Abort
+
+
+
 (* Shift [k] by [j] places to the left (or right if [j] is negative. *)
 let shift k j =
   let m = Mpz.init () in
@@ -159,6 +184,7 @@ let externals : (string * entry) list = [
   make_IIB "<>" (fun k1 k2 -> Mpzf.cmp k1 k2 <> 0) ;
   make_IIB "==" (fun k1 k2 -> Mpzf.cmp k1 k2 = 0) ;
   make_IR  "real" (fun ~prec k -> to_real ~prec:prec.Runtime.prec_mpfr k) ;
+  make_RI  "int" (fun ~prec r -> to_int ~prec:prec.Runtime.prec_mpfr r) ;
   make_BB  "not" (fun b -> not b) ;
   make_BBB "&&" ( && ) ;
   make_BBB "||" ( || ) ;
