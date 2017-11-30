@@ -64,8 +64,8 @@ let lookup_fun k {funs; _} =
 let print_trace ~loc ~prec {frame;frames;_} =
   let xvs = frame @ List.flatten frames in
   Print.message ~loc "Trace"
-    "\tprecision: %d@\n\t%t@."
-    prec
+    "\tprecision: %t@\n\t%t@."
+    (Runtime.print_prec prec)
     (fun ppf ->
       Format.pp_print_list
         ~pp_sep:(fun ppf () -> Format.fprintf ppf "@\n\t")
@@ -104,6 +104,7 @@ let as_value ~loc v =
     precision level [n], and returns the new stack and the computed value. *)
 let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result =
   if !Config.trace then print_trace ~loc ~prec stack ;
+  let {Runtime.prec_mpfr; Runtime.prec_lim} = prec in
   begin match c with
 
   | Syntax.Var k ->
@@ -119,8 +120,8 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
      stack, Value.CInteger k
 
   | Syntax.Float s ->
-     let rl = Dyadic.of_string ~prec ~round:Dyadic.down s in
-     let ru = Dyadic.of_string ~prec ~round:Dyadic.up s in
+     let rl = Dyadic.of_string ~prec:prec_mpfr ~round:Dyadic.down s in
+     let ru = Dyadic.of_string ~prec:prec_mpfr ~round:Dyadic.up s in
      let r = Real.make rl ru in
      stack, Value.CReal r
 
@@ -129,8 +130,8 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
      begin match Value.computation_as_integer v with
      | None -> Runtime.error ~loc:e.Location.loc Runtime.IntegerExpected
      | Some k ->
-        let rl = Dyadic.of_integer ~prec ~round:Dyadic.down k
-        and ru = Dyadic.of_integer ~prec ~round:Dyadic.up k in
+        let rl = Dyadic.of_integer ~prec:prec_mpfr ~round:Dyadic.down k
+        and ru = Dyadic.of_integer ~prec:prec_mpfr ~round:Dyadic.up k in
         let r = Real.make rl ru in
         stack, Value.CReal r
      end
@@ -166,13 +167,17 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
      let rec fold = function
        | [] -> raise Runtime.Abort
        | (b, c) :: lst ->
-          if
-            (let v = comp_ro ~prec stack b in
-             as_boolean ~loc:(b.Location.loc) v)
-          then
-            comp ~prec stack c
-          else
-            fold lst
+          begin try
+            if
+              (let v = comp_ro ~prec stack b in
+               as_boolean ~loc:(b.Location.loc) v)
+            then
+              comp ~prec stack c
+            else
+              fold lst
+            with
+            | Runtime.Abort -> fold lst
+          end
      in
      fold lst
 
@@ -226,14 +231,14 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
      end
 
   | Syntax.Lim (x, e) ->
-     let stack' = push_ro x (Value.VInteger (Mpzf.of_int prec)) stack in
+     let stack' = push_ro x (Value.VInteger (Mpzf.of_int prec_lim)) stack in
      let v = comp_ro ~prec stack' e in
      begin match Value.computation_as_real v with
      | None -> Runtime.error ~loc:e.Location.loc Runtime.RealExpected
      | Some r ->
-           let err = Dyadic.shift ~prec ~round:Dyadic.up Dyadic.one (-prec) in
-           let rl = Dyadic.sub ~prec ~round:Dyadic.down (Real.lower r) err
-           and ru = Dyadic.add ~prec ~round:Dyadic.up (Real.upper r) err in
+           let err = Dyadic.shift ~prec:prec_mpfr ~round:Dyadic.up Dyadic.one (-prec_lim) in
+           let rl = Dyadic.sub ~prec:prec_mpfr ~round:Dyadic.down (Real.lower r) err
+           and ru = Dyadic.add ~prec:prec_mpfr ~round:Dyadic.up (Real.upper r) err in
            let r = Real.make rl ru in
            stack, Value.CReal r
      end
@@ -244,24 +249,19 @@ and comp_ro ~prec stack c : Value.result = snd (comp ~prec (make_ro stack) c)
 and comp_ro_value ~prec stack c =
   as_value ~loc:(c.Location.loc) (comp_ro ~prec stack c)
 
-let topcomp ~max_prec stack c =
+let topcomp ~max_prec stack ({Location.loc;_} as c) =
   let rec loop prec =
-    if prec > max_prec
-    then
-      None
-    else begin
-        try
-          Some (comp_ro ~prec stack c)
-        with
-          Runtime.Abort ->
-          Format.eprintf "<Loss of precision at %d>@." prec ;
-          let prec = (prec * 3) / 2 + 1 in
-          loop prec
-      end
+    begin
+      try
+        comp_ro ~prec stack c
+      with
+        Runtime.Abort ->
+        Print.message ~loc "Runtime" "Loss of precision at %t" (Runtime.print_prec prec) ;
+        let prec = Runtime.next_prec ~loc prec in
+        loop prec
+    end
   in
-  match loop !Config.init_prec with
-  | Some v -> v
-  | None -> Runtime.error ~loc:(c.Location.loc) Runtime.PrecisionLoss
+  loop (Runtime.initial_prec ())
 
 let toplet_clauses stack lst =
   let rec fold stack' vs = function

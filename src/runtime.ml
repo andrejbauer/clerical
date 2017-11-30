@@ -58,7 +58,35 @@ type entry =
   | RO of Value.value       (** read-only stack value *)
   | RW of Value.value ref   (** read-write stack value *)
 
-type precision = int
+(** Precision describes at what precision we run MPFR (the field [prec_mpfr])
+    and which elements of limits we are computing [prec_lim]. We also
+    record the starting values. *)
+type precision =
+  {
+    prec_mpfr_min : int;
+    prec_lim_min : int;
+    prec_mpfr : int;
+    prec_lim : int;
+  }
+
+(** In absence of any knowledge, we scan for each value of [prec_mpfr]
+    all values of [prec_lim] up to [prec_mpfr]. *)
+let next_prec ~loc ({ prec_mpfr_min=k0; prec_lim_min=n0; prec_mpfr=k; prec_lim=n} as prec) =
+  if 2 * n < k then { prec with prec_lim = n + 1 }
+  else if k >= !Config.max_prec then error ~loc PrecisionLoss
+  else { prec with prec_mpfr = 1 + 3 * k / 2; prec_lim = n0 }
+
+let initial_prec () =
+  let k0 = max 2 !Config.init_prec
+  and n0 = 0 in
+  { prec_mpfr_min = k0 ;
+    prec_lim_min = n0 ;
+    prec_mpfr = k0 ;
+    prec_lim = n0
+  }
+
+let print_prec {prec_lim=n; prec_mpfr=k} ppf =
+  Format.fprintf ppf "(mpfr=%d, lim=%d)" k n
 
 (** The top frame is the one that we can write into, all
     the other frames are read-only. *)
@@ -68,5 +96,5 @@ type stack = {
     funs : (loc:Location.t -> prec:precision -> Value.value list -> Value.result) list
 }
 
-(** Initial state *)
+(** Initial stack *)
 let initial = { frame = [] ; frames = [] ; funs = [] }

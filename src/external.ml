@@ -156,10 +156,10 @@ let externals : (string * entry) list = [
   make_BB  "not" (fun b -> not b) ;
   make_BBB "&&" ( && ) ;
   make_BBB "||" ( || ) ;
-  make_RRR "+." (fun ~prec r1 r2 -> Real.add ~prec ~round:Real.down r1 r2);
-  make_RRR "-." (fun ~prec r1 r2 -> Real.sub ~prec ~round:Real.down r1 r2);
-  make_RRR "*." (fun ~prec r1 r2 -> Real.mul ~prec ~round:Real.down r1 r2);
-  make_RRR "/." (fun ~prec r1 r2 -> Real.div ~prec ~round:Real.down r1 r2);
+  make_RRR "+." (fun ~prec r1 r2 -> Real.add ~prec:prec.Runtime.prec_mpfr ~round:Real.down r1 r2);
+  make_RRR "-." (fun ~prec r1 r2 -> Real.sub ~prec:prec.Runtime.prec_mpfr ~round:Real.down r1 r2);
+  make_RRR "*." (fun ~prec r1 r2 -> Real.mul ~prec:prec.Runtime.prec_mpfr ~round:Real.down r1 r2);
+  make_RRR "/." (fun ~prec r1 r2 -> Real.div ~prec:prec.Runtime.prec_mpfr ~round:Real.down r1 r2);
   make_RRB "<." (fun ~prec r1 r2 -> real_cmp r1 r2 < 0);
   make_RRB ">." (fun ~prec r1 r2 -> real_cmp r1 r2 > 0);
   make_III "shift" shift
