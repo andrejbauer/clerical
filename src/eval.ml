@@ -239,13 +239,21 @@ and comp_ro_value ~prec stack c =
   as_value ~loc:(c.Location.loc) (comp_ro ~prec stack c)
 
 let topcomp ~max_prec stack ({Location.loc;_} as c) =
+  let require k r =
+    let err = Dyadic.sub ~prec:12 ~round:Dyadic.up (Real.upper r) (Real.lower r) in
+    let req = Dyadic.shift ~prec:12 ~round:Dyadic.down Dyadic.one (-k) in
+    if not (Dyadic.lt err req) then raise Runtime.Abort
+  in
   let rec loop prec =
     begin
       try
-        comp_ro ~prec stack c
+        match comp_ro ~prec stack c with
+        | (Value.CReal r) as v -> require !Config.out_prec r ; v
+        | (Value.CNone | Value.CBoolean _ | Value.CInteger _) as v -> v
       with
         Runtime.Abort ->
-        Print.message ~loc "Runtime" "Loss of precision at %t" (Runtime.print_prec prec) ;
+        if !Config.verbose then
+          Print.message ~loc "Runtime" "Loss of precision at %t" (Runtime.print_prec prec) ;
         let prec = Runtime.next_prec ~loc prec in
         loop prec
     end
@@ -316,9 +324,9 @@ let rec toplevel ~quiet runtime {Location.data=c; Location.loc} =
      topfile ~quiet runtime cmds
 
   | Syntax.TyTopPrecision p ->
-     Config.init_prec := p ;
+     Config.out_prec := p ;
      if not quiet then
-       Format.printf "precision set to %d@." p ;
+       Format.printf "Output precision set to %d@." p ;
      runtime
 
 and topfile ~quiet runtime = function

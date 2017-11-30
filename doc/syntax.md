@@ -64,11 +64,12 @@ evaluates command `⟨cmd⟩`. For example:
 
 ### Setting precision
 
-You can set the *initial* precision at which a toplevel command is computed with
+You can set the *output* precision at which a toplevel command prints reals with
 
     precision ⟨int⟩
 
-where `⟨int⟩` is the precision at which MPFR will compute. It has to be at least 2.
+where `⟨int⟩` is the number of bits that must be correct. Note that setting higher
+precision will of course require more computation.
 
 ### Loading a file
 

@@ -48,17 +48,25 @@ let options = Arg.align [
      Arg.String (fun str -> add_file true str),
      "<file> Load <file> into the initial environment");
 
-    ("--init_prec",
+    ("--init-prec",
      Arg.Set_int Config.init_prec,
-     "<int> Set initial precision for real numbers");
+     "<int> Set initial precision for MFPR");
 
-    ("--max_prec",
+    ("--max-prec",
      Arg.Set_int Config.max_prec,
-     "<int> Set maximum precision for real numbers");
+     "<int> Set maximum precision for MPFR");
+
+    ("--out-prec",
+     Arg.Set_int Config.out_prec,
+     "<int> Set precision for printing reals at top level");
 
     ("--trace",
      Arg.Set Config.trace,
-     " Print trace information during evaluation")
+     " Print trace information during evaluation");
+
+    ("--trace",
+     Arg.Set Config.verbose,
+     " Print information about precision during computation")
   ]
 
 (** Interactive toplevel *)
