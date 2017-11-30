@@ -113,11 +113,10 @@ plain_prefix_term:
     { let (op, loc) = oploc in
       Apply (op, [e2])
     }
-  | LPAREN REAL RPAREN e=simple_term           { CastReal e }
   | f=var_name LPAREN es=separated_list(COMMA, term) RPAREN
     { Apply (f, es) }
 
-simple_term: mark_location(plain_simple_term) { $1 }
+(* simple_term: mark_location(plain_simple_term) { $1 } *)
 plain_simple_term:
   | x=var_name                 { Var x }
   | k=NUMERAL                  { Integer k }
@@ -129,7 +128,10 @@ plain_simple_term:
   | BEGIN c=plain_term END     { c }
 
 var_name:
-  | NAME { $1 }
+  | NAME                     { $1 }
+  | BOOL                     { "bool" }
+  | REAL                     { "real" }
+  | INT                      { "int" }
   | LPAREN op=infix RPAREN   { fst op }
   | LPAREN op=prefix RPAREN  { fst op }
 

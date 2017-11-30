@@ -105,6 +105,10 @@ They may contain digits, and they may end in any number of `'`.
 Note that `42` is always an integer, and `42.0` is always a real. There is no automatic
 conversion from integers to reals.
 
+### Conversion from `int` to `real`
+
+The prelude defines a function `real` that takes an integer and returns a real.
+
 ### Command `skip`
 
 Skip does not do anything.

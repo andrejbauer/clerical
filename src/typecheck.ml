@@ -111,10 +111,6 @@ let rec comp ctx {Location.data=c; loc} =
   | Syntax.Float _ ->
      Type.Data Type.Real
 
-  | Syntax.CastReal e ->
-     check_expr ctx Type.Integer e ;
-     Type.Data Type.Real
-
   | Syntax.Apply (k, args) ->
      let (t_args, t_ret) = lookup_fun k ctx in
      check_args ~loc ctx t_args args ;

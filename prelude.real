@@ -30,6 +30,10 @@ external ( ! ) : (bool) -> bool = "not"
 external ( && ) : (bool, bool) -> bool = "&&"
 external ( || ) : (bool, bool) -> bool = "||"
 
+(* Conversion *)
+
+external real : (int) -> real = "real"
+
 (* Real-valued arithmetic *)
 external ( +. ) : (real, real) -> real = "+."
 external ( /. ) : (real, real) -> real = "/."

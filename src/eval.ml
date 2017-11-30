@@ -125,17 +125,6 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
      let r = Real.make rl ru in
      stack, Value.CReal r
 
-  | Syntax.CastReal e ->
-     let v = comp_ro ~prec stack e in
-     begin match Value.computation_as_integer v with
-     | None -> Runtime.error ~loc:e.Location.loc Runtime.IntegerExpected
-     | Some k ->
-        let rl = Dyadic.of_integer ~prec:prec_mpfr ~round:Dyadic.down k
-        and ru = Dyadic.of_integer ~prec:prec_mpfr ~round:Dyadic.up k in
-        let r = Real.make rl ru in
-        stack, Value.CReal r
-     end
-
   | Syntax.Apply (k, es) ->
      begin match lookup_fun k stack with
      | None -> Runtime.error ~loc Runtime.InvalidFunction

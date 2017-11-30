@@ -11,7 +11,6 @@ and comp' =
   | Boolean of bool
   | Integer of Mpzf.t
   | Float of string
-  | CastReal of comp
   | Apply of index * comp list
   | Skip
   | Sequence of comp * comp

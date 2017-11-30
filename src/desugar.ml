@@ -88,10 +88,6 @@ let rec comp ctx {Location.data=c; Location.loc=loc} =
 
     | Input.Float x -> Syntax.Float x
 
-    | Input.CastReal e ->
-       let e = comp ctx e in
-       Syntax.CastReal e
-
     | Input.Apply (f, es) ->
        begin match index_fun f ctx with
        | None -> error ~loc (UnknownFunction f)

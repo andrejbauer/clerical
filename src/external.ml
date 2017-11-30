@@ -136,6 +136,11 @@ let real_cmp r1 r2 =
 let two : Mpfr.t = snd (Mpfr.init_set_d 2.0 Mpfr.Near)
 let half : Mpfr.t = snd (Mpfr.init_set_d 0.5 Mpfr.Near)
 
+let to_real ~prec k =
+  let rl = Dyadic.of_integer ~prec:prec ~round:Dyadic.down k
+  and ru = Dyadic.of_integer ~prec:prec ~round:Dyadic.up k in
+  Real.make rl ru
+
 (* Shift [k] by [j] places to the left (or right if [j] is negative. *)
 let shift k j =
   let m = Mpz.init () in
@@ -153,6 +158,7 @@ let externals : (string * entry) list = [
   make_IIB ">=" (fun k1 k2 -> Mpzf.cmp k1 k2 >= 0) ;
   make_IIB "<>" (fun k1 k2 -> Mpzf.cmp k1 k2 <> 0) ;
   make_IIB "==" (fun k1 k2 -> Mpzf.cmp k1 k2 = 0) ;
+  make_IR  "real" (fun ~prec k -> to_real ~prec:prec.Runtime.prec_mpfr k) ;
   make_BB  "not" (fun b -> not b) ;
   make_BBB "&&" ( && ) ;
   make_BBB "||" ( || ) ;
