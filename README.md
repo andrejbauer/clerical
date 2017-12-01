@@ -16,7 +16,7 @@ To compile the OCaml implementation of Clerical you need OCaml and
 * the [MFPR](http://www.mpfr.org) library
 * the `menhir` OCaml parser generator
 * the `sedlex` OCaml package
-* the `mlgmpidl` OCaml package
+* the `mlgmpidl` OCaml package, version 1.2.6 or later.
 
 MPFR is aviable through various package managers. On macOS you can install it using
 [Homebrew](https://brew.sh):
@@ -59,5 +59,5 @@ The structure of the repository:
 Please consult:
 
 * [`doc/syntax.md`](doc/syntax.md) for a brief explanation of the syntax
-* [`examples`](doc/examples) for examples of Clerical programs
+* [`examples`](./examples) for examples of Clerical programs
 * [`prelude.real`)(./prelude.real) for the built-in functions and operators
