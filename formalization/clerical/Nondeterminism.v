@@ -137,26 +137,60 @@ CoFixpoint iterate {A B : Type} (f : A -> G (A + B)) (u : G (A + B)) : G B :=
 
    We shall achieve this by serializing the search.
 *)
-(* CoInductive Enumeration (A : Type) : Type := *)
-(*   | Say : A -> Enumeration A -> Enumeration A *)
-(*   | Mumble : Enumeration A -> Enumeration A (* Rick Statman taught me to call this one "mumble" *) *)
-(*   | Period : Enumeration A. *)
+CoInductive Enumeration (A : Type) : Type :=
+  | Say : A -> Enumeration A -> Enumeration A
+  | Mumble : Enumeration A -> Enumeration A (* Rick Statman taught me to call this one "mumble" *)
+  | Period : Enumeration A.
 
-(* Arguments Say {_} _ _. *)
-(* Arguments Mumble {_} _. *)
-(* Arguments Period {_}. *)
+Arguments Say {_} _ _.
+Arguments Mumble {_} _.
+Arguments Period {_}.
 
-(* CoFixpoint zip {A : Type} (e f : Enumeration A) : Enumeration A := *)
-(*   match e, f with *)
-(*   | Say a e, f => Say a (zip f e) *)
-(*   | Mumble e, f => Mumble (zip f e) *)
-(*   | Period, f => f *)
-(*   end. *)
+CoFixpoint zip {A : Type} (e f : Enumeration A) : Enumeration A :=
+  match e, f with
+  | Say a e, f => Say a (zip f e)
+  | Mumble e, f => Mumble (zip f e)
+  | Period, f => f
+  end.
 
-(* (* The possible results of a computation are enumerable. *) *)
-(* CoFixpoint enumerate {A : Type} (u : G A) : Enumeration A := *)
-(*   match u with *)
-(*   | Join v w => Mumble (zip (enumerate v) (enumerate w)) *)
-(*   | Skip v => Mumble (enumerate v) *)
-(*   | Stop a => Say a Period *)
-(*   end. *)
+(* Weave the results of a list of computations into an enumeration. *)
+CoFixpoint enumerate' {A : Type} (us : list (G A)) (vs : list (G A)) : Enumeration A :=
+  match us with
+  | nil =>
+    match vs with
+    | nil => Period
+    | cons _ _ => Mumble (enumerate' vs nil)
+    end
+  | cons (Join u v) us => Mumble (enumerate' us (cons u (cons v vs)))
+  | cons (Skip u) us => Mumble (enumerate' us (cons u vs))
+  | cons (Stop a) us => Say a (enumerate' us vs)
+  end.
+
+(** Enumerate the results of a computation. *)
+Definition enumerate {A : Type} (u : G A) : Enumeration A :=
+  enumerate' (cons u nil) nil.
+
+(** Convert an enumeation to a computation. *)
+CoFixpoint computize {A : Type} (e : Enumeration A) : G (option A) :=
+  match e with
+  | Mumble e => Skip (computize e)
+  | Say a e => Join (Stop (Some a)) (computize e)
+  | Period => Stop None
+  end.
+
+Fixpoint take {A : Type} (n : nat) (e : Enumeration A) : list A :=
+  match n with
+  | 0 => nil
+  | S n =>
+    match e with
+    | Mumble e => take n e
+    | Say a e => cons a (take n e)
+    | Period => nil
+    end
+  end.
+
+Fixpoint from_list {A} (xs : list A) : Enumeration A :=
+  match xs with
+  | nil => Period
+  | cons x xs => Say x (from_list xs)
+  end.

@@ -141,7 +141,7 @@ Proof.
           exact (Stop (inl δ)).
         * (* condition was false *)
           exact (Stop (inr (fst δ))).
-      + exact (Stop (inl γ)). 
+      + exact (Stop (inl γ)).
     - intro γ1.
       exact (Stop (γ1, tt)).
   }
