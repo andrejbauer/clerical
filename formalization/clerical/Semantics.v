@@ -51,6 +51,8 @@ Definition sem_ctx (Γ : ctx) : Type :=
 
 Definition sem_rw (Γ : ctx) := sem_list_datatype (ctx_rw Γ).
 
+Definition mk_readonly {Γ} (γ : sem_ctx Γ) : sem_ctx (readonly Γ) := (tt, γ).
+
 (* Cheap trick to get the a large inductive proof organized. Eventually
    we want to remove this. *)
 Axiom magic_axiom : forall A : Type, A. (* every type is inhabited, use with care *)
@@ -133,7 +135,7 @@ Proof.
     apply (@bindG (sem_rw Γ)).
     - apply (@iterate (sem_ctx Γ) (sem_rw Γ)).
       + intro δ.
-        apply (bindG (sem_comp (readonly Γ) b RBoolean D1 (tt, δ))).
+        apply (bindG (sem_comp (readonly Γ) b RBoolean D1 (mk_readonly δ))).
         intros [[] [|]].
         * (* condition was true *)
           exact (Stop (inl δ)).
@@ -164,7 +166,7 @@ Proof.
 
   (* has_type_newvar *)
   {
-    apply (bindG (IHD1 (tt, γ))).
+    apply (bindG (IHD1 (mk_readonly γ))).
     intros [[] x].
     apply (bindG (IHD2 ((x, fst γ), snd γ))).
     intros [[_ γ1] y].
@@ -174,7 +176,7 @@ Proof.
 
   (* has_type_assign *)
   {
-    apply (bindG (sem_comp _ _ _ D (tt, γ))).
+    apply (bindG (sem_comp _ _ _ D (mk_readonly γ))).
     intros [[] val_e].
     apply Stop.
     simple refine (_, tt).
