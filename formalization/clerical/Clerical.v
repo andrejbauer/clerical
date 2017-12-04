@@ -6,8 +6,6 @@
 Require Import ZArith.
 Require Import List.
 
-Require Import Delay.
-
 Inductive binary_op :=
   | OpPlus | OpLess | OpAnd.
 

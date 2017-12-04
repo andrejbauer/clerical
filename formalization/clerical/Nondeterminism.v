@@ -137,26 +137,26 @@ CoFixpoint iterate {A B : Type} (f : A -> G (A + B)) (u : G (A + B)) : G B :=
 
    We shall achieve this by serializing the search.
 *)
-CoInductive Enumeration (A : Type) : Type :=
-  | Say : A -> Enumeration A -> Enumeration A
-  | Mumble : Enumeration A -> Enumeration A (* Rick Statman taught me to call this one "mumble" *)
-  | Period : Enumeration A.
+(* CoInductive Enumeration (A : Type) : Type := *)
+(*   | Say : A -> Enumeration A -> Enumeration A *)
+(*   | Mumble : Enumeration A -> Enumeration A (* Rick Statman taught me to call this one "mumble" *) *)
+(*   | Period : Enumeration A. *)
 
-Arguments Say {_} _ _.
-Arguments Mumble {_} _.
-Arguments Period {_}.
+(* Arguments Say {_} _ _. *)
+(* Arguments Mumble {_} _. *)
+(* Arguments Period {_}. *)
 
-CoFixpoint zip {A : Type} (e f : Enumeration A) : Enumeration A :=
-  match e, f with
-  | Say a e, f => Say a (zip f e)
-  | Mumble e, f => Mumble (zip f e)
-  | Period, f => f
-  end.
+(* CoFixpoint zip {A : Type} (e f : Enumeration A) : Enumeration A := *)
+(*   match e, f with *)
+(*   | Say a e, f => Say a (zip f e) *)
+(*   | Mumble e, f => Mumble (zip f e) *)
+(*   | Period, f => f *)
+(*   end. *)
 
-(* The possible results of a computation are enumerable. *)
-CoFixpoint enumerate {A : Type} (u : G A) : Enumeration A :=
-  match u with
-  | Join v w => Mumble (zip (enumerate v) (enumerate w))
-  | Skip v => Mumble (enumerate v)
-  | Stop a => Say a Period
-  end.
+(* (* The possible results of a computation are enumerable. *) *)
+(* CoFixpoint enumerate {A : Type} (u : G A) : Enumeration A := *)
+(*   match u with *)
+(*   | Join v w => Mumble (zip (enumerate v) (enumerate w)) *)
+(*   | Skip v => Mumble (enumerate v) *)
+(*   | Stop a => Say a Period *)
+(*   end. *)

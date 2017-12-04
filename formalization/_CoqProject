@@ -1,6 +1,7 @@
 -R clerical/ clerical -o Makefile
 
 clerical/Nondeterminism.v
+clerical/Delay.v
 clerical/Clerical.v
 clerical/OperationalSemantics.v
 clerical/Typing.v

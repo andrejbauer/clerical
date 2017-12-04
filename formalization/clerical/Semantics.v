@@ -130,24 +130,36 @@ Proof.
 
   (* has_type_while *)
   {
-    unfinished.
+    apply (@bindG (sem_rw Γ)).
+    - apply (@iterate (sem_ctx Γ) (sem_rw Γ)).
+      + intro δ.
+        apply (bindG (sem_comp (readonly Γ) b RBoolean D1 (tt, δ))).
+        intros [[] [|]].
+        * (* condition was true *)
+          exact (Stop (inl δ)).
+        * (* condition was false *)
+          exact (Stop (inr (fst δ))).
+      + exact (Stop (inl γ)). 
+    - intro γ1.
+      exact (Stop (γ1, tt)).
   }
 
   (* has_type_Case *)
   {
-    apply Join.
-    - apply check.
-      + apply (bindG (IHD1 (tt, γ))).
-        intros [_ b].
-        exact (Stop b).
-      + apply (bindG (IHD2 γ)).
-        apply Stop.
-    - apply check.
-      + apply (bindG (IHD3 (tt, γ))).
-        intros [_ b].
-        exact (Stop b).
-      + apply (bindG (IHD4 γ)).
-        apply Stop.
+    unfinished.
+    (* apply Join. *)
+    (* - apply check. *)
+    (*   + apply (bindG (IHD1 (tt, γ))). *)
+    (*     intros [_ b]. *)
+    (*     exact (Stop b). *)
+    (*   + apply (bindG (IHD2 γ)). *)
+    (*     apply Stop. *)
+    (* - apply check. *)
+    (*   + apply (bindG (IHD3 (tt, γ))). *)
+    (*     intros [_ b]. *)
+    (*     exact (Stop b). *)
+    (*   + apply (bindG (IHD4 γ)). *)
+    (*     apply Stop. *)
   }
 
   (* has_type_newvar *)

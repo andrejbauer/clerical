@@ -73,7 +73,7 @@ Inductive has_type : ctx -> comp -> result_type -> Type :=
 
   | has_type_while :
       forall Γ b c,
-        has_type Γ b RBoolean ->
+        has_type (readonly Γ) b RBoolean ->
         has_type Γ c RCommand ->
         has_type Γ (WHILE b DO c END) RCommand
 
