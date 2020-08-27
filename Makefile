@@ -2,7 +2,7 @@ COQMAKEFILE = coq_makefile
 COQSRC = formalization
 
 OCAMLBUILD = ocamlbuild
-OCAMLBUILD_FLAGS = -j 4 -use-ocamlfind -pkg menhirLib -pkg sedlex -pkg gmp -pkg zarith
+OCAMLBUILD_FLAGS = -j 4 -use-ocamlfind -pkg menhirLib -pkg sedlex.ppx -pkg gmp -pkg zarith
 OCAMLBUILD_MENHIRFLAGS = -use-menhir -menhir "menhir --explain"
 SRCDIR = src
 
