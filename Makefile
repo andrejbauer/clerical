@@ -39,6 +39,6 @@ src/build.ml:
 
 # Cleaning up
 
-clean: $(COQSRC)/Makefile
-	$(MAKE) -C $(COQSRC) clean
+clean:
+	if [-f $(COQSRC)/Makefile] ; then $(MAKE) -C $(COQSRC) clean; fi
 	$(OCAMLBUILD) -clean

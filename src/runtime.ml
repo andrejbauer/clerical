@@ -32,7 +32,7 @@ exception Error of runtime_error Location.located
 exception Abort
 
 (** [error ~loc err] raises the given runtime error. *)
-let error ~loc err = Pervasives.raise (Error (Location.locate ~loc err))
+let error ~loc err = Stdlib.raise (Error (Location.locate ~loc err))
 
 (** Print error description. *)
 let rec print_error err ppf =
