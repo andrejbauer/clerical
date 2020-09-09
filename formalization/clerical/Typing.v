@@ -98,5 +98,52 @@ Inductive has_type : ctx -> comp -> result_type -> Type :=
         has_type Γ (SET k := e) RCommand
 .
 
-(** TODO: a function which takes Γ and c and optionally gives the judgment [has_type Γ c t]
-    for some datatype [t]. *)
+Section TypeInference.
+
+Fixpoint get {A : Type} (lst : list A) (k : nat) : option A :=
+  match k, lst with
+  | 0, nil => None
+  | 0, cons x _ => Some x
+  | S k, lst => get lst k
+  end.
+
+Fixpoint infer_type Γ c : option { ρ : result_type & has_type Γ c ρ }.
+Proof.
+  induction c.
+
+  (* Var *)
+  { destruct (get Γ n) as [| τ].
+  }
+
+  (* Boolean *)
+  { unfinished. }
+
+  (* Integer *)
+  { unfinished. }
+
+  (* BinOp *)
+  { unfinished. }
+
+  (* UniOp *)
+  { unfinished. }
+
+  (* Skip *)
+  { unfinished. }
+
+  (* Sequence *)
+  { unfinished. }
+
+  (* Case *)
+  { unfinished. }
+
+  (* While *)
+  { unfinished. }
+
+  (* Newvar *)
+  { unfinished. }
+
+  (* Assign *)
+  { unfinished. }
+
+
+End TypeInference.

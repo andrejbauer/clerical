@@ -1,3 +1,7 @@
+DUNE=dune
+
+default: clerical.exe
+
 COQMAKEFILE = coq_makefile
 COQSRC = formalization
 
@@ -6,9 +10,7 @@ OCAMLBUILD_FLAGS = -j 4 -use-ocamlfind -pkg menhirLib -pkg sedlex -pkg gmp -pkg 
 OCAMLBUILD_MENHIRFLAGS = -use-menhir -menhir "menhir --explain"
 SRCDIR = src
 
-default: clerical.native
-
-.PHONY: coq_code clean clerical.byte clerical.native clerical.d.byte clerical.p.native
+.PHONY: coq_code clean clerical.exe
 
 ### Compilation of Coq files
 
@@ -20,16 +22,16 @@ coq_code: $(COQSRC)/Makefile
 
 ### Compilation of OCaml files
 
-clerical.byte clerical.native clerical.d.byte clerical.p.native: src/build.ml
-	ocamlbuild $(OCAMLBUILD_MENHIRFLAGS) $(OCAMLBUILD_FLAGS) $@
-
 src/build.ml:
 	/bin/echo -n 'let version = "' > $@
 	$(MAKE) -s version | tr -d '\n' >> $@
 	/bin/echo '" ;;' >> $@
 
+clerical.exe: src/build.ml
+	$(DUNE) build src/clerical.exe
+
 # Cleaning up
 
 clean: $(COQSRC)/Makefile
 	$(MAKE) -C $(COQSRC) clean
-	$(OCAMLBUILD) -clean
+	$(DUNE) clean

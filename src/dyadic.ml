@@ -4,20 +4,20 @@
    rounding mode. In other words, all operations are approximate. We never need to add or
    multiply two dyadics exactly (it is too expensive to do so, anyway). *)
 
-type t = Mpfr.t
+type t = Mpfr.mpfr_t
 
 (** Rounding modes *)
 
-type rounding_mode = Mpfr.round
+type rounding_mode = Mpfr.mpfr_rnd_t
 
-let down = Mpfr.Down
+let down = Mpfr.Toward_Minus_Infinity
 
-let up = Mpfr.Up
+let up = Mpfr.Toward_Plus_Infinity
 
 (** Invert the rounding mode.*)
 let anti = function
-  | Mpfr.Down -> Mpfr.Up
-  | Mpfr.Up -> Mpfr.Down
+  | Mpfr.Toward_Minus_Infinity -> Mpfr.Toward_Plus_Infinity
+  | Mpfr.Toward_Plus_Infinity -> Mpfr.Toward_Minus_Infinity
   | _ -> raise (Invalid_argument "Dyadic.anti")
 
 (** Constructors *)
@@ -25,9 +25,7 @@ let anti = function
 (** [int] to dyadic. *)
 let of_int ?prec ~round k =
   let prec = (match prec with None -> Sys.word_size | Some p -> p) in
-  let q = Mpfr.init2 prec in
-    ignore (Mpfr.set_si q k round) ;
-    q
+  Mpfr.make_from_int ~prec ~rnd:round k
 
 (** GMP large integer to dyadic. *)
 let of_integer ~prec ~round k =
@@ -116,8 +114,8 @@ let negative_infinity =
 
 (** Depending on the rounding mode, return negative or positive infinity *)
 let infinity = function
-  | Mpfr.Down -> negative_infinity
-  | Mpfr.Up -> positive_infinity
+  | Mpfr.Toward_Minus_Infinity -> negative_infinity
+  | Mpfr.Toward_Plus_Infinity -> positive_infinity
   | _ -> raise (Invalid_argument "Dyadic.infinity")
 
 let is_infinity = Mpfr.inf_p

@@ -148,20 +148,22 @@ Proof.
 
   (* has_type_Case *)
   {
-    unfinished.
-    (* apply Join. *)
-    (* - apply check. *)
-    (*   + apply (bindG (IHD1 (tt, γ))). *)
-    (*     intros [_ b]. *)
-    (*     exact (Stop b). *)
-    (*   + apply (bindG (IHD2 γ)). *)
-    (*     apply Stop. *)
-    (* - apply check. *)
-    (*   + apply (bindG (IHD3 (tt, γ))). *)
-    (*     intros [_ b]. *)
-    (*     exact (Stop b). *)
-    (*   + apply (bindG (IHD4 γ)). *)
-    (*     apply Stop. *)
+    (* Beware: this semantics of cases is not what we want.
+       it assigns to [case true => c1 | ⊥ => c2 end] the meaning
+       "⊥ or c1", and we would like to avoid ⊥. *)
+    apply Join.
+    - apply check.
+      + apply (bindG (IHD1 (tt, γ))).
+        intros [_ b].
+        exact (Stop b).
+      + apply (bindG (IHD2 γ)).
+        apply Stop.
+    - apply check.
+      + apply (bindG (IHD3 (tt, γ))).
+        intros [_ b].
+        exact (Stop b).
+      + apply (bindG (IHD4 γ)).
+        apply Stop.
   }
 
   (* has_type_newvar *)

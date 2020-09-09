@@ -6,14 +6,6 @@
    a constructive definition that will be workable with Coq.
 *)
 
-(* (* The usual "delay" monad. *) *)
-(* CoInductive Lift (A : Type) := *)
-(*   | Later : Lift A -> Lift A *)
-(*   | Now : A -> Lift A. *)
-
-(* Arguments Later {_} _. *)
-(* Arguments Now {_} _. *)
-
 CoInductive G (A : Type) :=
   | Join : G A -> G A -> G A
   | Skip : G A -> G A
@@ -47,7 +39,7 @@ CoInductive partially {A : Type} (φ : A -> Prop) : G A -> Prop :=
   | partially_Skip : forall S, partially φ S -> partially φ (Skip S)
   | partially_Stop : forall a, φ a -> partially φ (Stop a).
 
-CoInductive maybe {A : Type} (φ : A -> Prop) : G A -> Prop :=
+Inductive maybe {A : Type} (φ : A -> Prop) : G A -> Prop :=
   | maybe_Join_left : forall S T, maybe φ S -> maybe φ (Join S T)
   | maybe_Join_right : forall S T, maybe φ T -> maybe φ (Join S T)
   | maybe_Skip : forall S, maybe φ S -> maybe φ (Skip S)
@@ -58,9 +50,6 @@ Definition is_terminating {A : Type} := totally (fun (_ : A) => True).
 
 (* The fact that a computation necessarily diverges is expressed like this. *)
 Definition is_diverging {A : Type} := partially (fun (_ : A) => False).
-
-(* The fact that divergence is a possible result (the tree is infinite). *)
-Definition maybe_diverging {A : Type} := maybe (fun (_ : A) => False).
 
 (* The non-terminating computation. *)
 CoFixpoint bottom {A : Type} : G A := Skip bottom.
@@ -98,8 +87,8 @@ Proof.
   firstorder.
 Qed.
 
-(* Termination computations are maximal. *)
-Lemma total_maximal {A : Type} (u v : G A) :
+(* Terminating computations are maximal. *)
+Lemma terminating_maximal {A : Type} (u v : G A) :
   is_terminating u -> u ≤ v -> v ≤ u.
 Proof.
   intros T [Ltot Lpar].
@@ -112,14 +101,15 @@ Proof.
     now apply total_to_partial, Ltot, partial_to_total.
 Qed.
 
-Definition is_upper {A : Type} (c : nat -> G A) (v : G A) :=
-  forall n, c n ≤ v.
+(* The following construction is used to give the while loop a meaning. We start with a
+   computation [u] which may end with values [inl a] or [inr b]. We replace [inr b] with
+   [b], and expand the ones of the form [inl a] into [f a] to get further subcomputations,
+   and we keep doing this.
 
-Definition is_sup {A : Type} (c : nat -> G A) (v : G A) :=
-  is_upper c v /\ forall w, is_upper c w -> v ≤ w.
-
-
-(* The following construction is used to give the while loop a meaning. *)
+   In the semantics of [while b do c done] we use [inr γ₁] to indicate that the while loop
+   is done and [γ₁] is the state of read-write variables it left us with. We use [inl δ]
+   to indicate that the loop is not done yet, and [δ] is the current state. The map [f]
+   does one iteration of the loop, i.e., [if b then c ; .. else skip]. *)
 CoFixpoint iterate {A B : Type} (f : A -> G (A + B)) (u : G (A + B)) : G B :=
   match u with
   | Join v w => Join (iterate f v) (iterate f w)
@@ -128,69 +118,12 @@ CoFixpoint iterate {A B : Type} (f : A -> G (A + B)) (u : G (A + B)) : G B :=
   | Stop (inr b) => Stop b
   end.
 
-(* Support for nondeterministic case.
-
-   We need to arrange the non-deterministic choice in such a way
-   that if anywhere in the computation [(true, a)] appears,
-   then the result is a terminating computation. It seems necessary
-   to have some sort of synchronized parallel search.
-
-   We shall achieve this by serializing the search.
-*)
-CoInductive Enumeration (A : Type) : Type :=
-  | Say : A -> Enumeration A -> Enumeration A
-  | Mumble : Enumeration A -> Enumeration A (* Rick Statman taught me to call this one "mumble" *)
-  | Period : Enumeration A.
-
-Arguments Say {_} _ _.
-Arguments Mumble {_} _.
-Arguments Period {_}.
-
-CoFixpoint zip {A : Type} (e f : Enumeration A) : Enumeration A :=
-  match e, f with
-  | Say a e, f => Say a (zip f e)
-  | Mumble e, f => Mumble (zip f e)
-  | Period, f => f
-  end.
-
-(* Weave the results of a list of computations into an enumeration. *)
-CoFixpoint enumerate' {A : Type} (us : list (G A)) (vs : list (G A)) : Enumeration A :=
-  match us with
-  | nil =>
-    match vs with
-    | nil => Period
-    | cons _ _ => Mumble (enumerate' vs nil)
-    end
-  | cons (Join u v) us => Mumble (enumerate' us (cons u (cons v vs)))
-  | cons (Skip u) us => Mumble (enumerate' us (cons u vs))
-  | cons (Stop a) us => Say a (enumerate' us vs)
-  end.
-
-(** Enumerate the results of a computation. *)
-Definition enumerate {A : Type} (u : G A) : Enumeration A :=
-  enumerate' (cons u nil) nil.
-
-(** Convert an enumeation to a computation. *)
-CoFixpoint computize {A : Type} (e : Enumeration A) : G (option A) :=
-  match e with
-  | Mumble e => Skip (computize e)
-  | Say a e => Join (Stop (Some a)) (computize e)
-  | Period => Stop None
-  end.
-
-Fixpoint take {A : Type} (n : nat) (e : Enumeration A) : list A :=
-  match n with
-  | 0 => nil
-  | S n =>
-    match e with
-    | Mumble e => take n e
-    | Say a e => cons a (take n e)
-    | Period => nil
-    end
-  end.
-
-Fixpoint from_list {A} (xs : list A) : Enumeration A :=
-  match xs with
-  | nil => Period
-  | cons x xs => Say x (from_list xs)
+(* The semantics of guarded case is not quite satisfying, but we will deal with this
+   later. For now we just define what essentially corresponds to [if b then c else ⊥]. *)
+CoFixpoint check {A : Type} (b : G bool) (u : G A) : G A :=
+  match b with
+  | Join b1 b2 => Join (check b1 u) (check b2 u)
+  | Skip b => Skip (check b u)
+  | Stop false => bottom
+  | Stop true => u
   end.
