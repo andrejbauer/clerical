@@ -33,6 +33,7 @@ package manager. First install OPAM, for example on macOS you can use Homebrew:
 
 Then install OCaml dependencies:
 
+    opam install dune
     opam install menhir
     opam install sedlex
     opam install mlgmpidl
