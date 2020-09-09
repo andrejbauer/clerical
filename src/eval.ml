@@ -153,6 +153,11 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
      end
 
   | Syntax.Case lst ->
+     (** We implement guarded case by trying each branch in succession and take the first
+        one that succeeds. This is *not* the correct implementation because a branch might
+        diverge. We should use a more sophisticated evaluation strategy that is immune to
+        one of the branches diverging. Nevertheless, simple programs will still work
+        correctly. *)
      let rec fold = function
        | [] -> raise Runtime.Abort
        | (b, c) :: lst ->
