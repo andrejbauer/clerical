@@ -11,7 +11,9 @@ The code compiles with Coq 8.6, but it is likely that older versions are ok.
 
 ### Clerical implementation
 
-To compile the OCaml implementation of Clerical you need OCaml and
+To compile the OCaml implementation of Clerical you need OCaml.
+The code is known to compile with OCaml 4.07.1.
+You also need the following OCaml libraries:
 
 * the [MFPR](http://www.mpfr.org) library
 * the `menhir` OCaml parser generator

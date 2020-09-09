@@ -1,8 +1,17 @@
+# Figure out which version of OCaml is being used
+OCAML_VERSION=$(shell ocamlc --version)
+
+# Figure out which version of sedlex is being used
+SEDLEX_VERSION=$(shell opam info sedlex --version)
+
+# Set up correct incantation for sedlex
+SEDLEX=$(shell if [ "$(SEDLEX_VERSION)" \< "2.0" ] ; then echo "sedlex" ; else echo "sedlex.ppx"; fi)
+
 COQMAKEFILE = coq_makefile
 COQSRC = formalization
 
 OCAMLBUILD = ocamlbuild
-OCAMLBUILD_FLAGS = -j 4 -use-ocamlfind -pkg menhirLib -pkg sedlex -pkg gmp -pkg zarith
+OCAMLBUILD_FLAGS = -j 4 -use-ocamlfind -pkg menhirLib -pkg $(SEDLEX) -pkg gmp -pkg zarith
 OCAMLBUILD_MENHIRFLAGS = -use-menhir -menhir "menhir --explain"
 SRCDIR = src
 
