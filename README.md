@@ -58,7 +58,7 @@ The structure of the repository:
 * `examples` – examples of Clerical programs
 * `doc` – documentation
 
-## How wo write Clerical programs
+## Clerical syntax
 
 Please consult:
 
