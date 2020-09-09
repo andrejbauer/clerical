@@ -1,0 +1,19 @@
+opam-version: "2.0"
+name: "clerical"
+version: "0.1"
+synopsis: "a programming language for infinite-precision real numbers"
+description: """
+An imperative programming language for infinite-precision real numbers
+with guarded non-determinism and limit operator.
+"""
+maintainer: "Andrej Bauer <andrej.bauer@andrej.com>"
+authors: "Andrej Bauer <andrej.bauer>"
+license: "MIT License"
+homepage: "https://github.com/andrejbauer/clerical"
+bug-reports: ""
+dev-repo: "https://github.com/andrejbauer/clerical"
+depends: [ "ocaml" "dune" "zarith" "mlmpfr" "sedlex"]
+build: [
+  [make]
+]
+install: [make "install"]
