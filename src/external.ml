@@ -143,7 +143,7 @@ let real_cmp r1 r2 =
   then (-1)
   else if Dyadic.lt (Real.upper r2) (Real.lower r1)
   then 1
-  else raise Runtime.Abort
+  else raise Runtime.NoPrecision
 
 let two : Mpfr.t = snd (Mpfr.init_set_d 2.0 Mpfr.Near)
 let half : Mpfr.t = snd (Mpfr.init_set_d 0.5 Mpfr.Near)
@@ -162,7 +162,7 @@ let to_int ~prec r =
     Mpfr.get_z z mid Mpfr.Near ;
     Mpzf._mpzf z
   else
-    raise Runtime.Abort
+    raise Runtime.NoPrecision
 
 
 

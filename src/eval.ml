@@ -100,7 +100,7 @@ let as_value ~loc v =
   | None -> Runtime.error ~loc Runtime.ValueExpected
   | Some v -> v
 
-(** [comp n stack c] evaluates computation [c] in the given [stack] at
+(** [comp ~prec n stack c] evaluates computation [c] in the given [stack] at
     precision level [n], and returns the new stack and the computed value. *)
 let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result =
   if !Config.trace then print_trace ~loc ~prec stack ;
@@ -153,13 +153,8 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
      end
 
   | Syntax.Case lst ->
-     (** We implement guarded case by trying each branch in succession and take the first
-        one that succeeds. This is *not* the correct implementation because a branch might
-        diverge. We should use a more sophisticated evaluation strategy that is immune to
-        one of the branches diverging. Nevertheless, simple programs will still work
-        correctly. *)
      let rec fold = function
-       | [] -> raise Runtime.Abort
+       | [] -> raise Runtime.NoPrecision
        | (b, c) :: lst ->
           begin try
             if
@@ -170,23 +165,26 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
             else
               fold lst
             with
-            | Runtime.Abort -> fold lst
+            | Runtime.NoPrecision -> fold lst
           end
      in
      fold lst
 
   | Syntax.While (b, c) ->
-     let rec loop stack =
+     let rec loop fuel stack =
        let v = comp_ro ~prec stack b in
        begin match as_boolean ~loc:(b.Location.loc) v with
        | false -> stack, Value.CNone
        | true ->
-          let stack, v = comp ~prec stack c in
-          let () = as_unit ~loc:(c.Location.loc) v in
-          loop stack
+          if fuel < 0 then
+            raise Runtime.NoPrecision
+          else
+            let stack, v = comp ~prec stack c in
+            let () = as_unit ~loc:(c.Location.loc) v in
+            loop (fuel-1) stack
        end
      in
-     loop stack
+     loop prec.prec_while stack
 
   | Syntax.Newvar (lst, c) ->
      let rec fold stack' = function
@@ -247,7 +245,7 @@ let topcomp ~max_prec stack ({Location.loc;_} as c) =
   let require k r =
     let err = Dyadic.sub ~prec:12 ~round:Dyadic.up (Real.upper r) (Real.lower r) in
     let req = Dyadic.shift ~prec:12 ~round:Dyadic.down Dyadic.one (-k) in
-    if not (Dyadic.lt err req) then raise Runtime.Abort
+    if not (Dyadic.lt err req) then raise Runtime.NoPrecision
   in
   let rec loop prec =
     begin
@@ -256,7 +254,7 @@ let topcomp ~max_prec stack ({Location.loc;_} as c) =
         | (Value.CReal r) as v -> require !Config.out_prec r ; v
         | (Value.CNone | Value.CBoolean _ | Value.CInteger _) as v -> v
       with
-        Runtime.Abort ->
+        Runtime.NoPrecision ->
         if !Config.verbose then
           Print.message ~loc "Runtime" "Loss of precision at %t" (Runtime.print_prec prec) ;
         let prec = Runtime.next_prec ~loc prec in

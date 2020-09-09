@@ -64,7 +64,7 @@ let options = Arg.align [
      Arg.Set Config.trace,
      " Print trace information during evaluation");
 
-    ("--trace",
+    ("--verbose",
      Arg.Set Config.verbose,
      " Print information about precision during computation")
   ]

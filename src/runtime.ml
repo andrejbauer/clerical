@@ -26,10 +26,15 @@ type runtime_error =
   | UnknownExternal of string
   | InternalError of string
 
+(** Fuel tells us when to give up on evaluation. *)
+type fuel =
+  | InfiniteFuel (* allow diverging evaluation *)
+  | FiniteFuel of int
+
 exception Error of runtime_error Location.located
 
-(** Exceptions that signals loss of precision *)
-exception Abort
+(** Exception that signals loss of precision *)
+exception NoPrecision
 
 (** [error ~loc err] raises the given runtime error. *)
 let error ~loc err = Stdlib.raise (Error (Location.locate ~loc err))
@@ -60,21 +65,25 @@ type entry =
 
 (** Precision describes at what precision we run MPFR (the field [prec_mpfr])
     and which elements of limits we are computing [prec_lim]. We also
-    record the starting values. *)
+    record the starting values. The field prec_while gives the maximum
+    number of iterations allowed in a while loop.
+*)
 type precision =
   {
     prec_mpfr_min : int;
     prec_lim_min : int;
     prec_mpfr : int;
     prec_lim : int;
+    prec_while : int;
   }
 
 (** In absence of any knowledge, we scan for each value of [prec_mpfr]
     all values of [prec_lim] up to [prec_mpfr]. *)
-let next_prec ~loc ({ prec_mpfr_min=k0; prec_lim_min=n0; prec_mpfr=k; prec_lim=n} as prec) =
-  if 2 * n < k then { prec with prec_lim = n + 1 }
+let next_prec ~loc
+    ({prec_mpfr_min=k0; prec_lim_min=n0; prec_mpfr=k; prec_lim=n; prec_while=w} as prec) =
+  if 2 * n < k then { prec with prec_lim = n + 1; prec_while = 2*w }
   else if k >= !Config.max_prec then error ~loc PrecisionLoss
-  else { prec with prec_mpfr = 1 + 3 * k / 2; prec_lim = n0 }
+  else { prec with prec_mpfr = 1 + 3 * k / 2; prec_lim = n0 ; prec_while = 2*w }
 
 let initial_prec () =
   let k0 = max 2 !Config.init_prec
@@ -82,11 +91,12 @@ let initial_prec () =
   { prec_mpfr_min = k0 ;
     prec_lim_min = n0 ;
     prec_mpfr = k0 ;
-    prec_lim = n0
+    prec_lim = n0 ;
+    prec_while = 100 ;
   }
 
-let print_prec {prec_lim=n; prec_mpfr=k} ppf =
-  Format.fprintf ppf "(mpfr=%d, lim=%d)" k n
+let print_prec {prec_lim=n; prec_mpfr=k; prec_while=w} ppf =
+  Format.fprintf ppf "(mpfr=%d, lim=%d, while=%d)" k n w
 
 (** The top frame is the one that we can write into, all
     the other frames are read-only. *)
