@@ -104,7 +104,7 @@ let as_value ~loc v =
     precision level [n], and returns the new stack and the computed value. *)
 let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result =
   if !Config.trace then print_trace ~loc ~prec stack ;
-  let {Runtime.prec_mpfr; Runtime.prec_lim} = prec in
+  let {Runtime.prec_mpfr; Runtime.prec_lim_min} = prec in
   begin match c with
 
   | Syntax.Var k ->
