@@ -1,0 +1,46 @@
+(* *)
+
+function prec(int x):
+  1.0 /. real(shift(1, x))
+
+function sine (real x):
+  lim p =>
+    var epsilon := prec(p)
+    and n := 0
+    and s := real(1)
+    and r := real(0)
+    and e := x in
+    while
+      (if e >. real(0)
+      then
+        (case real(2) *. e >. epsilon => true | e <. epsilon => false end)
+      else
+        (case real(0)  -. real(2) *. e >. epsilon => true | real(0) -. e <. epsilon => false end))
+    do
+      n := n + 1;
+      r := r +. e *. s;
+      s := s *. real(-1);
+      e := e *. x *. x /. real(2 * n + 1) /. real(2 * n)
+    end; r
+
+function piapprox (int q):
+    var delta := prec(q)
+    and a := real(3)
+    and b := real(4) in
+    while
+      (case
+      | b -. a >. delta /. real(2) => true
+      | b -. a <. delta => false
+      end)
+    do
+      var x := (b +. a) /. real(2) in
+      if
+        sine (x) >. real (0)
+      then
+        a := x
+      else
+        b := x
+    end; a
+
+function pi ():
+  lim q => piapprox (q)
