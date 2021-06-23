@@ -177,7 +177,7 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
        | false -> stack, Value.CNone
        | true ->
           if fuel < 0 then
-            raise Runtime.NoPrecision
+            raise Runtime.NoFuel
           else
             let stack, v = comp ~prec stack c in
             let () = as_unit ~loc:(c.Location.loc) v in
@@ -273,11 +273,17 @@ let topcomp ~max_prec stack ({Location.loc;_} as c) =
         | (Value.CReal r) as v -> require !Config.out_prec r ; v
         | (Value.CNone | Value.CBoolean _ | Value.CInteger _) as v -> v
       with
-        Runtime.NoPrecision ->
-        if !Config.verbose then
-          Print.message ~loc "Runtime" "Loss of precision at %t" (Runtime.print_prec prec) ;
-        let prec = Runtime.next_prec ~loc prec in
-        loop prec
+        | Runtime.NoPrecision ->
+          if !Config.verbose then
+            Print.message ~loc "Runtime" "Loss of precision at %t" (Runtime.print_prec prec) ;
+          let prec = Runtime.next_prec ~loc prec in
+          loop prec
+        | Runtime.NoFuel ->
+          if !Config.verbose then
+            Print.message ~loc "Runtime" "Lack of fuel at %t" (Runtime.print_prec prec) ;
+          match Runtime.next_fuel ~loc prec with
+          | Some prec -> loop prec
+          | None -> Runtime.error ~loc Runtime.FuelOverflow
     end
   in
   loop (Runtime.initial_prec ())
