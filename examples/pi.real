@@ -1,4 +1,4 @@
-(* *)
+(* compute pi as the unique root of sine(x) contained in (3, 4)  *)
 
 function prec(int x):
   1.0 /. real(shift(1, x))
