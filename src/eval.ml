@@ -222,19 +222,38 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
         end
      end
 
-  | Syntax.Lim (x, e) ->
-     let stack' = push_ro x (Value.VInteger (Mpzf.of_int prec_lim)) stack in
-     let v = comp_ro ~prec stack' e in
-     begin match Value.computation_as_real v with
-     | None -> Runtime.error ~loc:e.Location.loc Runtime.RealExpected
-     | Some r ->
-           let err = Dyadic.shift ~prec:prec_mpfr ~round:Dyadic.up Dyadic.one (-prec_lim) in
-           let rl = Dyadic.sub ~prec:prec_mpfr ~round:Dyadic.down (Real.lower r) err
-           and ru = Dyadic.add ~prec:prec_mpfr ~round:Dyadic.up (Real.upper r) err in
-           let r = Real.make rl ru in
-           stack, Value.CReal r
-     end
-  end
+   | Syntax.Lim (x, e) ->
+     let try_lim target_prec =
+       let stack' = push_ro x (Value.VInteger (Mpzf.of_int target_prec)) stack in
+       let v = comp_ro ~prec stack' e in
+       begin
+         match Value.computation_as_real v with
+         | None -> Runtime.error ~loc:e.Location.loc Runtime.RealExpected
+         | Some r ->
+               let err = Dyadic.shift ~prec:prec_mpfr ~round:Dyadic.up Dyadic.one (-target_prec) in
+               let rl = Dyadic.sub ~prec:prec_mpfr ~round:Dyadic.down (Real.lower r) err
+               and ru = Dyadic.add ~prec:prec_mpfr ~round:Dyadic.up (Real.upper r) err in
+               let r = Real.make rl ru in
+               stack, Value.CReal r
+       end
+     in
+     try
+       (* try the best possible *)
+       try_lim prec_mpfr
+     with
+     (* when the best try fails, find the best possible terget prec *)
+     | Runtime.NoPrecision ->
+       let poorest  = try_lim 1 in
+       let rec try_lim_seq cp best_so_far =
+         try
+           try_lim_seq (2 * cp) (try_lim (2 * cp))
+         with
+         | Runtime.NoPrecision ->
+           best_so_far
+       in
+       try_lim_seq 1 poorest
+   end
+
 
 and comp_ro ~prec stack c : Value.result = snd (comp ~prec (make_ro stack) c)
 
