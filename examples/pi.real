@@ -17,7 +17,7 @@ function bound(real x, real d):
   end
 
 function nbound(real x, real d):
-  if bound(x, d) then false else true
+  if bound(x, d) then false else true end
 
 function sin (real x):
   lim p =>
@@ -48,6 +48,7 @@ function pi ():
         a := x
       else
         b := x
+      end
       ;
       k := k + 1
     end; a
