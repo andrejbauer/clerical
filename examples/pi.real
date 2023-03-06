@@ -3,44 +3,51 @@
 function prec(int x):
   1.0 /. real(shift(1, x))
 
-function sine (real x):
+function abs(real x):
+  lim n =>
+    case
+      x <. prec (n + 1) => real (0) -. x
+    | x >. real (0) -. prec (n + 1) => x
+    end
+
+function bound(real x, real d):
+  case
+    x <. d => true
+  | x >. d /. real(2) => false
+  end
+
+function nbound(real x, real d):
+  if bound(x, d) then false else true
+
+function sin (real x):
   lim p =>
     var epsilon := prec(p)
-    and n := 0
+    and m := 0
     and s := real(1)
-    and r := real(0)
-    and e := x in
-    while
-      (if e >. real(0)
-      then
-        (case real(2) *. e >. epsilon => true | e <. epsilon => false end)
-      else
-        (case real(0)  -. real(2) *. e >. epsilon => true | real(0) -. e <. epsilon => false end))
+    and A := real(0)
+    and q := x in
+    while nbound (q, epsilon)
     do
-      n := n + 1;
-      r := r +. e *. s;
+      m := m + 1;
+      A := A +. q *. s;
       s := s *. real(-1);
-      e := e *. x *. x /. real(2 * n + 1) /. real(2 * n)
-    end; r
+      q := q *. x *. x /. real(2 * m + 1) /. real(2 * m)
+    end; A
 
-function piapprox (int q):
-    var delta := prec(q)
+function pi ():
+  lim n =>
+    var k := 0
     and a := real(3)
     and b := real(4) in
-    while
-      (case
-      | b -. a >. delta /. real(2) => true
-      | b -. a <. delta => false
-      end)
+    while k < n
     do
-      var x := (b +. a) /. real(2) in
+      var x := (a +. b) /. real(2) in
       if
-        sine (x) >. real (0)
+        sin (x) >. real (0)
       then
         a := x
       else
         b := x
+      ;
+      k := k + 1
     end; a
-
-function pi ():
-  lim q => piapprox (q)
