@@ -43,7 +43,7 @@ function pi ():
     do
       var x := (a +. b) /. real(2) in
       if
-        sin (x) >. real (0)
+        real (0) <. sin (x)
       then
         a := x
       else
@@ -51,4 +51,4 @@ function pi ():
       end
       ;
       k := k + 1
-    end; a
+    end; (a +. b) /. real(2)
