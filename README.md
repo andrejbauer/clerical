@@ -11,12 +11,15 @@ The code compiles with Coq 8.6, but it is likely that older versions are ok.
 
 ### Clerical implementation
 
-To compile the OCaml implementation of Clerical you need OCaml and
+To compile the OCaml implementation of Clerical you need OCaml.
+The code is known to compile with OCaml 4.07.1 and 4.09.0.
+You also need the following OCaml libraries:
 
 * the [MFPR](http://www.mpfr.org) library
 * the `menhir` OCaml parser generator
 * the `sedlex` OCaml package
 * the `mlgmpidl` OCaml package, version 1.2.6 or later.
+* the `zarith` OCaml package
 
 MPFR is aviable through various package managers. On macOS you can install it using
 [Homebrew](https://brew.sh):
@@ -30,9 +33,11 @@ package manager. First install OPAM, for example on macOS you can use Homebrew:
 
 Then install OCaml dependencies:
 
+    opam install dune
     opam install menhir
     opam install sedlex
     opam install mlgmpidl
+    opam install zarith
 
 ## Compilation instructions
 
@@ -54,7 +59,7 @@ The structure of the repository:
 * `examples` – examples of Clerical programs
 * `doc` – documentation
 
-## How wo write Clerical programs
+## Clerical syntax
 
 Please consult:
 

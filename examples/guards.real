@@ -1,0 +1,43 @@
+(* Tricky examples of non-deterministic case *)
+
+function guard1():
+  case
+  | 0.0 <. 0.0 => 13
+  | 0.0 <. 0.00000000000000000000000000000001 => 42
+  end
+
+function guard2():
+  case
+  | (while true do skip end; true) => 13
+  | true => 42
+  end
+
+function guard3():
+  case
+  | (var i := 0 in while i < 10000 do i := i + 1 end; true) => 42
+  end
+
+function guard4():
+  case
+  | (var i := 0 in while i < 10000 do i := i + 1 end; true) => 13
+  | true => 42
+  end
+
+function guard5():
+  case
+  | true =>
+    case
+    | (while true do skip end; true) => 13
+    end
+  | true =>
+    case
+    | true => 42
+    end
+  end
+
+(* They should all compute 42 *)
+do guard1()
+do guard2()
+do guard3()
+do guard4()
+do guard5()

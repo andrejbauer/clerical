@@ -1,0 +1,36 @@
+(* The ambivalent behavior of guarded cases. *)
+
+function guess(int x):
+  var y := 0 in
+  var keep_going := true in
+  while keep_going do
+    if x == y then
+      keep_going := false
+    else
+      case
+      | true => y := 2 * y
+      | true => y := 2 * y + 1
+      end
+  end
+
+function foo():
+  var x := 0 in
+  case 
+  | true => x := 1
+  | true => skip
+  end ;
+  while x == 1 do skip end
+
+function bar():
+  var x := 0 in
+  case 
+  | true => while x == 1 do skip end
+  | true => x := 1 ; while x == 1 do skip end
+  end
+
+function baz():
+  var x := (case true => 0 | true => 1 end) in
+  while x == 0 do skip end  
+
+function qux():
+  while (case true => true | true => false end) do skip end

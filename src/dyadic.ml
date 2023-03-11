@@ -145,7 +145,7 @@ let classify a =
 (** Addition. Special cases: - ∞ + -∞ and -∞ + ∞ *)
 let add ?prec ~round a b =
   let prec = (match prec with
-              | None -> Pervasives.max (Mpfr.get_prec a) (Mpfr.get_prec b)
+              | None -> Stdlib.max (Mpfr.get_prec a) (Mpfr.get_prec b)
               | Some p -> p)
   in
   if (is_negative_infinity a && is_positive_infinity b) ||
@@ -160,7 +160,7 @@ let add ?prec ~round a b =
 (** Subtraction. Special cases: ∞ - ∞ and -∞ - -∞. *)
 let sub ?prec ~round a b =
   let prec = (match prec with
-              | None -> Pervasives.max (Mpfr.get_prec a) (Mpfr.get_prec b)
+              | None -> Stdlib.max (Mpfr.get_prec a) (Mpfr.get_prec b)
               | Some p -> p)
   in
   if (is_negative_infinity a && is_negative_infinity b) ||
@@ -248,7 +248,7 @@ let double ?prec ~round a =
     between [a] and [b], close to the average. This only works for
     finite [a] and [b]. *)
 let average a b =
-  let prec = 1 + Pervasives.max (Mpfr.get_prec a) (Mpfr.get_prec b) in
+  let prec = 1 + Stdlib.max (Mpfr.get_prec a) (Mpfr.get_prec b) in
   let q = add ~prec ~round:Mpfr.Near a b in
     ignore (Mpfr.mul_2si q q (-1) Mpfr.Near) ;
     q
@@ -298,7 +298,7 @@ let to_string ~round x =
 	    if String.get s 0 = '-' then ("-", string_delete s 0 1) else ("", s)
 	  in
 	  let str =
-	    if trim then trim_right ~min_length:(Pervasives.max 1 e) str' '0' else str'
+	    if trim then trim_right ~min_length:(Stdlib.max 1 e) str' '0' else str'
 	  in
 	    if e > String.length str || e < - exp_notation then
 	      sign ^ string_insert str 1 "." ^ "e" ^ string_of_int (e - 1)
