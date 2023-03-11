@@ -23,9 +23,21 @@ function guard4():
   | true => 42
   end
 
+function guard5():
+  case
+  | true =>
+    case
+    | (while true do skip end; true) => 13
+    end
+  | true =>
+    case
+    | true => 42
+    end
+  end
+
 (* They should all compute 42 *)
 do guard1()
 do guard2()
 do guard3()
 do guard4()
-
+do guard5()
