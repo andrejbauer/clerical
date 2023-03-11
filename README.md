@@ -19,7 +19,6 @@ You also need the following OCaml libraries:
 * the `menhir` OCaml parser generator
 * the `sedlex` OCaml package
 * the `mlgmpidl` OCaml package, version 1.2.6 or later.
-* the `zarith` OCaml package
 
 MPFR is aviable through various package managers. On macOS you can install it using
 [Homebrew](https://brew.sh):
@@ -37,25 +36,19 @@ Then install OCaml dependencies:
     opam install menhir
     opam install sedlex
     opam install mlgmpidl
-    opam install zarith
 
 ## Compilation instructions
 
-To compile the Coq code, run
-
-    make coq_code
-
 To compile Clerical, run
 
-    make clerical.native
-
+    dune build
 
 ## Repository structure
 
 The structure of the repository:
 
 * `src` – the OCaml implementation of Clerical
-* `formalization` – the Coq formalization of the language
+* `formalization` – the Coq formalization of the language (outdated)
 * `examples` – examples of Clerical programs
 * `doc` – documentation
 
