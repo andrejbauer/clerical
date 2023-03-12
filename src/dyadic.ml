@@ -24,12 +24,11 @@ let anti = function
 
 (** [int] to dyadic. *)
 let of_int ?prec ~round k =
-  let prec = (match prec with None -> Sys.word_size | Some p -> p) in
   Mpfr.of_int k round
 
 (** GMP large integer to dyadic. *)
 let of_integer ~prec ~round k =
-  let q = Mpfr.of_mpz prec in
+  let q = Mpfr.of_mpz k round in
     ignore (Mpfr.set_z q k round) ;
     q
 
@@ -39,21 +38,21 @@ let make_int ?prec ~round m e =
     q
 
 let make ~prec ~round m e =
-  let q = of_integer prec round m in
+  let q = of_integer ~prec ~round m in
     (if Mpfr.mul_2si q q e Mpfr.Zero <> 0 then assert false) ;
     q
 
 (** Constants *)
 
-let zero = of_int ~round:down 0
+let zero : t = of_int ~round:down 0
 
-let one = of_int ~round:down 1
+let one : t = of_int ~round:down 1
 
-let negative_one = of_int ~round:down (-1)
+let negative_one : t = of_int ~round:down (-1)
 
-let two = of_int ~round:down 2
+let two : t = of_int ~round:down 2
 
-let half ?prec ~round = make_int ?prec ~round 1 (-1)
+let half ?prec round = make_int ?prec ~round 1 (-1)
 
 (** Order *)
 
@@ -257,7 +256,7 @@ let average a b =
 
 let of_string ~prec ~round str =
   let x = Mpfr.init2 prec in
-  Mpfr.set_str x str 0 round ;
+  Mpfr.set_str x str ~base:0 round ;
   x
 
 let trim_right ?(min_length = 0) str chr =

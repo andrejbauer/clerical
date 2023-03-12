@@ -74,7 +74,7 @@ let funty (dts, t) = (List.map valty dts, cmpty t)
 (** Desugar a computation *)
 let rec comp ctx {Location.data=c; Location.loc=loc} =
 
-  let rec comp' ctx = function
+  let comp' ctx = function
 
     | Input.Var x ->
        begin match index x ctx with
@@ -174,7 +174,7 @@ let rec comp ctx {Location.data=c; Location.loc=loc} =
 
 let rec toplevel ctx {Location.data=c; Location.loc=loc} =
 
-let rec toplevel' ctx = function
+let toplevel' ctx = function
 
     | Input.TopDo c ->
        let c = comp ctx c in

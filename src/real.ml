@@ -258,5 +258,5 @@ let split ~prec k i =
      equal parts. If [i] is infinite it does a reasonable thing. *)
 
 let thirds ~prec k i =
-  let i1, i2 = split prec k i in
-  midpoint prec k i1, midpoint prec k i2
+  let i1, i2 = split ~prec k i in
+  midpoint ~prec k i1, midpoint ~prec k i2

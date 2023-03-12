@@ -95,7 +95,7 @@ let initial_prec () =
     prec_while = 100 ;
   }
 
-let print_prec {prec_lim=n; prec_mpfr=k; prec_while=w} ppf =
+let print_prec {prec_lim=n; prec_mpfr=k; prec_while=w;_} ppf =
   Format.fprintf ppf "(mpfr=%d, lim=%d, while=%d)" k n w
 
 (** The top frame is the one that we can write into, all

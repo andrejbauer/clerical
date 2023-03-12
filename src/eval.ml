@@ -1,18 +1,16 @@
-open Runtime
-
 (** Make the stack read-only by pushing a new empty top frame onto it. *)
-let make_ro {frame; frames; funs} =
-  {frame = [] ; frames = frame :: frames; funs = funs}
+let make_ro Runtime.{frame; frames; funs} =
+  Runtime.{frame = [] ; frames = frame :: frames; funs = funs}
 
 (** Push a read-write value onto the top frame. *)
-let push_rw x v st = { st with frame = (x, RW (ref v)) :: st.frame }
+let push_rw x v st = Runtime.{ st with frame = (x, RW (ref v)) :: st.frame }
 
 (** Push a read-only value onto the top frame. *)
-let push_ro x v st = { st with frame = (x, RO v) :: st.frame }
+let push_ro x v st = Runtime.{ st with frame = (x, RO v) :: st.frame }
 
 (** Define a new function. *)
 let push_fun f stack =
-  { stack with funs = f :: stack.funs }
+  Runtime.{ stack with funs = f :: stack.funs }
 
 (** Push many read-only values *)
 let push_ros xs vs st = List.fold_left2 (fun st x v -> push_ro x v st) st xs vs
@@ -25,14 +23,14 @@ let pop stack k =
     | k, _ :: lst -> remove (k-1) lst
     | _, [] -> Runtime.error ~loc:Location.nowhere (Runtime.InternalError "pop")
   in
-  {stack with frame = remove k stack.frame}
+  Runtime.{stack with frame = remove k stack.frame}
 
 (** Lookup a value on the stack *)
-let lookup_val k {frame; frames; _} =
+let lookup_val k Runtime.{frame; frames; _} =
   let rec lookup k vs vss =
     match k, vs, vss with
-    | 0, ((_, RO v) :: _), _ -> Some v
-    | 0, ((_, RW r) :: _), _ -> Some !r
+    | 0, ((_, Runtime.RO v) :: _), _ -> Some v
+    | 0, ((_, Runtime.RW r) :: _), _ -> Some !r
     | k, [], (vs :: vss) -> lookup k vs vss
     | k, [], [] -> None
     | k, (_ :: vs), vss -> lookup (k-1) vs vss
@@ -40,18 +38,18 @@ let lookup_val k {frame; frames; _} =
   lookup k frame frames
 
 (** Lookup a reference to a read-write value on the stack *)
-let lookup_ref k {frame; _} =
+let lookup_ref k Runtime.{frame; _} =
   let rec lookup k vs =
     match k, vs  with
-    | 0, ((_, RO v) :: _) -> None
-    | 0, ((_, RW r) :: _) -> Some r
+    | 0, ((_, Runtime.RO v) :: _) -> None
+    | 0, ((_, Runtime.RW r) :: _) -> Some r
     | k, [] -> None
     | k, (_ :: vs) -> lookup (k-1) vs
   in
   lookup k frame
 
 (** Lookup a function definition *)
-let lookup_fun k {funs; _} =
+let lookup_fun k Runtime.{funs; _} =
   let rec lookup k fs =
     match k, fs with
     | _, [] -> None
@@ -61,7 +59,7 @@ let lookup_fun k {funs; _} =
   lookup k funs
 
 (** Print trace *)
-let print_trace ~loc ~prec {frame;frames;_} =
+let print_trace ~loc ~prec Runtime.{frame; frames;_} =
   let xvs = frame @ List.flatten frames in
   Print.message ~loc "Trace"
     "\tprecision: %t@\n\t%t@."
@@ -102,9 +100,9 @@ let as_value ~loc v =
 
 (** [comp ~prec n stack c] evaluates computation [c] in the given [stack] at
     precision level [n], and returns the new stack and the computed value. *)
-let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result =
+let rec comp ~prec stack {Location.data=c; Location.loc} : Runtime.stack * Value.result =
   if !Config.trace then print_trace ~loc ~prec stack ;
-  let {Runtime.prec_mpfr; Runtime.prec_lim} = prec in
+  let {Runtime.prec_mpfr; Runtime.prec_lim; _} = prec in
   begin match c with
 
   | Syntax.Var k ->
@@ -184,7 +182,7 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : stack * Value.result 
             loop (fuel-1) stack
        end
      in
-     loop prec.prec_while stack
+     loop prec.Runtime.prec_while stack
 
   | Syntax.Newvar (lst, c) ->
      let rec fold stack' = function
@@ -280,20 +278,21 @@ let topfun stack xs c =
     try
       comp_ro ~prec (push_ros xs vs stack) c
     with
-    | Error {Location.data=err; loc=loc'} ->
-       raise (Error (Location.locate ~loc:loc' (CallTrace (loc, err))))
+    | Runtime.Error {Location.data=err; loc=loc'} ->
+       raise (Runtime.Error (Location.locate ~loc:loc' (Runtime.CallTrace (loc, err))))
   in
   push_fun g stack
 
 let topexternal ~loc stack s =
   match External.lookup s with
-  | None -> error ~loc (UnknownExternal s)
+  | None -> Runtime.(error ~loc (UnknownExternal s))
   | Some g ->
      let h ~loc ~prec vs =
        try
          g ~prec vs
        with
-       | Error {Location.data=err; loc=loc'} -> raise (Error (Location.locate ~loc:loc' (CallTrace (loc, err))))
+       | Runtime.Error {Location.data=err; loc=loc'} ->
+          raise (Runtime.Error (Location.locate ~loc:loc' (Runtime.CallTrace (loc, err))))
      in
      push_fun h stack
 

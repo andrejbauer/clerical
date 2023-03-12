@@ -18,14 +18,6 @@ let options = Arg.align [
      Arg.Set_int Config.columns,
      " Set the maximum number of columns of pretty printing");
 
-    ("--wrapper",
-     Arg.String (fun str -> Config.wrapper := Some [str]),
-     "<program> Specify a command-line wrapper to be used (such as rlwrap or ledit)");
-
-    ("--no-wrapper",
-     Arg.Unit (fun () -> Config.wrapper := None),
-     " Do not use a command-line wrapper");
-
     ("--no-prelude",
      Arg.Unit (fun () -> Config.prelude_file := Config.PreludeNone),
      " Do not load the prelude.m31 file");
@@ -96,30 +88,13 @@ let interactive_shell state =
     End_of_file -> ()
 
 (** Main program *)
-let main =
+let _main =
   Sys.catch_break true ;
   (* Parse the arguments. *)
   Arg.parse
     options
     (fun str -> add_file false str ; Config.interactive_shell := false)
     usage ;
-  (* Attempt to wrap yourself with a line-editing wrapper. *)
-  if !Config.interactive_shell then
-    begin match !Config.wrapper with
-      | None -> ()
-      | Some lst ->
-        let n = Array.length Sys.argv + 2 in
-        let args = Array.make n "" in
-        Array.blit Sys.argv 0 args 1 (n - 2) ;
-        args.(n - 1) <- "--no-wrapper" ;
-        List.iter
-          (fun wrapper ->
-             try
-               args.(0) <- wrapper ;
-               Unix.execvp wrapper args
-             with Unix.Unix_error _ -> ())
-          lst
-    end ;
   (* Files were accumulated in the wrong order, so we reverse them *)
   files := List.rev !files ;
   (* Should we load the prelude file? *)

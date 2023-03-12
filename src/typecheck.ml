@@ -50,7 +50,7 @@ exception Error of type_error Location.located
 let error ~loc err = Stdlib.raise (Error (Location.locate ~loc err))
 
 (** Print error description. *)
-let rec print_error err ppf =
+let print_error err ppf =
   match err with
   | InternalError s -> Format.fprintf ppf "internal error %s, please report" s
   | TypeMismatch (t_expected, t_actual) ->
