@@ -28,7 +28,7 @@ let of_int ?prec ~round k =
 
 (** GMP large integer to dyadic. *)
 let of_integer ~prec ~round k =
-  let q = Mpfr.of_mpz k round in
+  let q = Mpfr.init2 prec in
     ignore (Mpfr.set_z q k round) ;
     q
 
