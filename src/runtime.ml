@@ -82,7 +82,7 @@ type precision =
 let next_prec ~loc
     ({prec_mpfr_min=k0; prec_lim_min=n0; prec_mpfr=k; prec_lim=n; prec_while=w} as prec) =
   let w' = if w < max_int lsr 1 then 2 * w else w in
-  if 2 * n < k then { prec with prec_lim = n + 1; prec_while = w' }
+  if 2 * n < k then { prec with prec_lim = 5 * (n + 3) / 4; prec_while = w' }
   else if k >= !Config.max_prec then error ~loc PrecisionLoss
   else { prec with prec_mpfr = 1 + 3 * k / 2; prec_lim = n0 ; prec_while = w' }
 
