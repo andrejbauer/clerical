@@ -221,14 +221,20 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : Runtime.stack * Value
      end
 
    | Syntax.Lim (x, e) ->
-     let try_lim target_prec =
-       let stack' = push_ro x (Value.VInteger (Mpzf.of_int target_prec)) stack in
+     (* when computing at precision n we first try to compute the n-th term
+        of the limit, and use that as the approximate result. If the computation
+        fails we fall back to computing successively the 1st, 2nd, ... term of
+        the limit, and take the last one that doesn't fail.
+     *)
+
+     let try_lim n =
+       let stack' = push_ro x (Value.VInteger (Mpzf.of_int n)) stack in
        let v = comp_ro ~prec stack' e in
        begin
          match Value.computation_as_real v with
          | None -> Runtime.error ~loc:e.Location.loc Runtime.RealExpected
          | Some r ->
-               let err = Dyadic.shift ~prec:prec_mpfr ~round:Dyadic.up Dyadic.one (-target_prec) in
+               let err = Dyadic.shift ~prec:prec_mpfr ~round:Dyadic.up Dyadic.one (-n) in
                let rl = Dyadic.sub ~prec:prec_mpfr ~round:Dyadic.down (Real.lower r) err
                and ru = Dyadic.add ~prec:prec_mpfr ~round:Dyadic.up (Real.upper r) err in
                let r = Real.make rl ru in
@@ -236,20 +242,24 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : Runtime.stack * Value
        end
      in
      try
-       (* try the best possible *)
+       (* If we succeed with current precision then we return *)
        try_lim prec_mpfr
      with
-     (* when the best try fails, find the best possible terget prec *)
+     (* If current precision fails, then successively try n = 1, 2, 4, ... up to mpfr_prec, until we fail.
+        We return the last result that succeeded. This strategy was inspired by iRRAM. *)
      | Runtime.NoPrecision ->
-       let poorest  = try_lim 1 in
-       let rec try_lim_seq cp best_so_far =
+       let rec loop n previous_result =
          try
-           try_lim_seq (2 * cp) (try_lim (2 * cp))
+           if n >= prec_mpfr then
+             previous_result
+           else
+             let current_result = try_lim (2 * n) in
+             loop (2 * n) current_result
          with
-         | Runtime.NoPrecision ->
-           best_so_far
+         | Runtime.NoPrecision -> previous_result
        in
-       try_lim_seq 1 poorest
+       let poorest = try_lim 1 in
+       loop 1 poorest
    end
 
 
