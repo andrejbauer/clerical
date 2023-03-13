@@ -91,7 +91,7 @@ plain_term:
   | e=plain_op_term                                             { e }
   | c1=term SEMICOLON c2=term                                   { Sequence (c1, c2) }
   | CASE lst=case_cases END                                     { Case lst }
-  | IF e=op_term THEN c1=term ELSE c2=term                      { If (e, c1, c2) }
+  | IF e=op_term THEN c1=term ELSE c2=term END                  { If (e, c1, c2) }
   | WHILE e=op_term DO c=term END                               { While (e, c) }
   | LET a=separated_nonempty_list(AND,let_clause) IN c=term     { Let (a, c) }
   | VAR a=separated_nonempty_list(AND,var_clause) IN c=term     { Newvar (a, c) }

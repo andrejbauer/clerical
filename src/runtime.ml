@@ -25,6 +25,7 @@ type runtime_error =
   | InvalidExternal of string
   | UnknownExternal of string
   | InternalError of string
+  | FuelOverflow
 
 (** Fuel tells us when to give up on evaluation. *)
 type fuel =
@@ -35,6 +36,9 @@ exception Error of runtime_error Location.located
 
 (** Exception that signals loss of precision *)
 exception NoPrecision
+(** Exception that signals loss of fuel *)
+exception NoFuel
+
 
 (** [error ~loc err] raises the given runtime error. *)
 let error ~loc err = Stdlib.raise (Error (Location.locate ~loc err))
@@ -57,6 +61,7 @@ let rec print_error err ppf =
   | InvalidExternal s -> Format.fprintf ppf "invalid application of %s" s
   | UnknownExternal s ->  Format.fprintf ppf "unknown external function %s" s
   | InternalError s -> Format.fprintf ppf "internal error (%s)" s
+  | FuelOverflow -> Format.fprintf ppf "Max iteration reached"
 
 (** A stack entry *)
 type entry =
@@ -73,18 +78,23 @@ type precision =
     prec_mpfr_min : int;
     prec_lim_min : int;
     prec_mpfr : int;
-    prec_lim : int;
     prec_while : int;
   }
+
 
 (** In absence of any knowledge, we scan for each value of [prec_mpfr]
     all values of [prec_lim] up to [prec_mpfr]. *)
 let next_prec ~loc
-    ({prec_mpfr_min=k0; prec_lim_min=n0; prec_mpfr=k; prec_lim=n; prec_while=w} as prec) =
-  let w' = if w < max_int lsr 1 then 2 * w else w in
-  if 2 * n < k then { prec with prec_lim = 5 * (n + 3) / 4; prec_while = w' }
-  else if k >= !Config.max_prec then error ~loc PrecisionLoss
-  else { prec with prec_mpfr = 1 + 3 * k / 2; prec_lim = n0 ; prec_while = w' }
+    ({prec_mpfr_min=k0; prec_lim_min=n0; prec_mpfr=k; prec_while=w} as prec) =
+  (* if 2 * n < k then { prec with prec_lim = n + 1} *)
+  (* else  *)
+  if k >= !Config.max_prec then error ~loc PrecisionLoss
+  else { prec with prec_mpfr = 1 + 3 * k / 2}
+
+let next_fuel ~loc
+    ({prec_mpfr_min=k0; prec_lim_min=n0; prec_mpfr=k;  prec_while=w} as prec) =
+    if 2 * w > w then Some {prec with prec_while = 2*w} else None
+
 
 let initial_prec () =
   let k0 = max 2 !Config.init_prec
@@ -92,12 +102,12 @@ let initial_prec () =
   { prec_mpfr_min = k0 ;
     prec_lim_min = n0 ;
     prec_mpfr = k0 ;
-    prec_lim = n0 ;
     prec_while = 100 ;
   }
 
-let print_prec {prec_lim=n; prec_mpfr=k; prec_while=w;_} ppf =
-  Format.fprintf ppf "(mpfr=%d, lim=%d, while=%d)" k n w
+
+let print_prec {prec_mpfr=k; prec_while=w} ppf =
+  Format.fprintf ppf "(mpfr=%d, while=%d)" k w
 
 (** The top frame is the one that we can write into, all
     the other frames are read-only. *)

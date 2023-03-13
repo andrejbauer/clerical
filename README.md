@@ -4,7 +4,7 @@ An implementation of an imperative langauge for exact real number computation.
 
 ## Prerequisites
 
-To compile the OCaml implementation of Clerical you need OCaml 5 or later.
+To compile the OCaml implementation of Clerical and a sufficiently new version of OCaml (version 4.10 or later should work).
 You also need the following:
 
 * the [MFPR](http://www.mpfr.org) library
@@ -15,12 +15,7 @@ You also need the following:
 ### OCaml & OPAM
 
 Follow [these instructions](https://www.ocaml.org/docs/up-and-running) for
-installing OCaml 5 and the OCaml package manager OPAM.
-
-It is possible to have several OCaml versions installed in parallel (these are
-called “switches”). Make sure that you switch to OCaml 5 using the command:
-
-    opam switch 5.0.0
+installing OCaml and the OCaml package manager OPAM.
 
 
 ### MPFR
@@ -33,25 +28,6 @@ is aviable through various package managers. On MacOS you can install it using
 
 ### OCaml tools & libraries
 
-First install OPAM, as described above. Verify that OCaml 5 is activated by running
-
-    opam switch
-
-You should see something like, noting the arrow `→` indicating the active version:
-
-    #  switch   compiler                    description
-       4.10.0   ocaml-base-compiler.4.10.0  4.10.0
-       4.12.0   ocaml-base-compiler.4.12.0  4.12.0
-    →  5.0.0    ocaml-base-compiler.5.0.0   5.0.0
-       default  ocaml-system.4.09.0         default
-
-If Ocaml 5 is not active, you can activate it with
-
-    opam switch 5.0.0
-
-possibly replacing `5.0.0` with a later version (use `opam switch
-list-available` to see what is available).
-
 Install OCaml tools and libraries with
 
     opam install dune
@@ -59,8 +35,7 @@ Install OCaml tools and libraries with
     opam install sedlex
     opam install mlgmpidl
 
-**Note:** At the time of writing (2023-03-12) OPAM does not yet support
-`mlgmpidl` for OCaml 5, even though the package works with OCaml 5. You might have to install it manually from the GitHub repository [`mlgmpidl`](https://github.com/nberth/mlgmpidl).
+**Note:** At the time of writing (2023-03-12) OPAM does not yet support `mlgmpidl` for OCaml 5, even though the code compiles with OCaml 5. You might have to install it manually from the GitHub repository [`mlgmpidl`](https://github.com/nberth/mlgmpidl) if you are using OCaml 5.
 
 
 ## Compilation
