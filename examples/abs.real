@@ -1,7 +1,7 @@
 (* Absolute value *)
 function abs(real x):
   lim n =>
-    let epsilon = 1.0 /. real(shift(1, n)) in
+    let epsilon = 1.0 /. real(shift(1, n+1)) in
     case
     | x <. epsilon => 0.0 -. x
     | epsilon <. x => x

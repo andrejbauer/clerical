@@ -102,7 +102,7 @@ let as_value ~loc v =
     precision level [n], and returns the new stack and the computed value. *)
 let rec comp ~prec stack {Location.data=c; Location.loc} : Runtime.stack * Value.result =
   if !Config.trace then print_trace ~loc ~prec stack ;
-  let {Runtime.prec_mpfr; Runtime.prec_lim; _} = prec in
+  let {Runtime.prec_mpfr; _} = prec in
   begin match c with
 
   | Syntax.Var k ->
@@ -175,7 +175,7 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : Runtime.stack * Value
        | false -> stack, Value.CNone
        | true ->
           if fuel < 0 then
-            raise Runtime.NoPrecision
+            raise Runtime.NoFuel
           else
             let stack, v = comp ~prec stack c in
             let () = as_unit ~loc:(c.Location.loc) v in
@@ -220,19 +220,38 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : Runtime.stack * Value
         end
      end
 
-  | Syntax.Lim (x, e) ->
-     let stack' = push_ro x (Value.VInteger (Mpzf.of_int prec_lim)) stack in
-     let v = comp_ro ~prec stack' e in
-     begin match Value.computation_as_real v with
-     | None -> Runtime.error ~loc:e.Location.loc Runtime.RealExpected
-     | Some r ->
-           let err = Dyadic.shift ~prec:prec_mpfr ~round:Dyadic.up Dyadic.one (-prec_lim) in
-           let rl = Dyadic.sub ~prec:prec_mpfr ~round:Dyadic.down (Real.lower r) err
-           and ru = Dyadic.add ~prec:prec_mpfr ~round:Dyadic.up (Real.upper r) err in
-           let r = Real.make rl ru in
-           stack, Value.CReal r
-     end
-  end
+   | Syntax.Lim (x, e) ->
+     let try_lim target_prec =
+       let stack' = push_ro x (Value.VInteger (Mpzf.of_int target_prec)) stack in
+       let v = comp_ro ~prec stack' e in
+       begin
+         match Value.computation_as_real v with
+         | None -> Runtime.error ~loc:e.Location.loc Runtime.RealExpected
+         | Some r ->
+               let err = Dyadic.shift ~prec:prec_mpfr ~round:Dyadic.up Dyadic.one (-target_prec) in
+               let rl = Dyadic.sub ~prec:prec_mpfr ~round:Dyadic.down (Real.lower r) err
+               and ru = Dyadic.add ~prec:prec_mpfr ~round:Dyadic.up (Real.upper r) err in
+               let r = Real.make rl ru in
+               stack, Value.CReal r
+       end
+     in
+     try
+       (* try the best possible *)
+       try_lim prec_mpfr
+     with
+     (* when the best try fails, find the best possible terget prec *)
+     | Runtime.NoPrecision ->
+       let poorest  = try_lim 1 in
+       let rec try_lim_seq cp best_so_far =
+         try
+           try_lim_seq (2 * cp) (try_lim (2 * cp))
+         with
+         | Runtime.NoPrecision ->
+           best_so_far
+       in
+       try_lim_seq 1 poorest
+   end
+
 
 and comp_ro ~prec stack c : Value.result = snd (comp ~prec (make_ro stack) c)
 
@@ -252,11 +271,17 @@ let topcomp ~max_prec stack ({Location.loc;_} as c) =
         | (Value.CReal r) as v -> require !Config.out_prec r ; v
         | (Value.CNone | Value.CBoolean _ | Value.CInteger _) as v -> v
       with
-        Runtime.NoPrecision ->
-        if !Config.verbose then
-          Print.message ~loc "Runtime" "Loss of precision at %t" (Runtime.print_prec prec) ;
-        let prec = Runtime.next_prec ~loc prec in
-        loop prec
+        | Runtime.NoPrecision ->
+          if !Config.verbose then
+            Print.message ~loc "Runtime" "Loss of precision at %t" (Runtime.print_prec prec) ;
+          let prec = Runtime.next_prec ~loc prec in
+          loop prec
+        | Runtime.NoFuel ->
+          if !Config.verbose then
+            Print.message ~loc "Runtime" "Lack of fuel at %t" (Runtime.print_prec prec) ;
+          match Runtime.next_fuel ~loc prec with
+          | Some prec -> loop prec
+          | None -> Runtime.error ~loc Runtime.FuelOverflow
     end
   in
   loop (Runtime.initial_prec ())
