@@ -169,7 +169,7 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : Runtime.stack * Value
   | Syntax.While (b, c) ->
      let granularity = 1000 in
      let rec loop k stack =
-       if k = 0 then (* we should yield here *) () ;
+       if k = 0 then yield () ;
        let v = comp_ro ~prec stack b in
        begin match as_boolean ~loc:(b.Location.loc) v with
        | false -> stack, Value.CNone
@@ -288,8 +288,8 @@ and comp_guards ~prec stack cases =
     with
     | Runtime.NoPrecision -> ()
   in
-  (* Put all the cases into the queue. *)
-  List.iter (fun bc -> Queue.add (make_thread bc) queue) cases ;
+  (* Put all the cases into the queue, with the first guard at the start of the queue *)
+  List.iter (fun bc -> Queue.add (make_thread bc) queue) (List.rev cases) ;
   match_with
     dequeue
     ()
@@ -323,7 +323,22 @@ let topcomp ~max_prec stack ({Location.loc;_} as c) =
           loop prec
     end
   in
-  loop (Runtime.initial_prec ())
+  let open Effect in
+  let open Effect.Deep in
+  (* Install a handler that reactivates all Yields *)
+  match_with
+    loop
+    (Runtime.initial_prec ())
+    {
+      retc = (fun v -> v)
+    ; exnc = (fun exc -> raise exc)
+    ; effc = (fun (type a) (eff : a t) ->
+      match eff with
+      | Yield -> Some (fun (k : (a, Value.result) continuation) ->
+                     if !Config.verbose then Print.message ~loc "Runtime" "Yield!" ;
+                     continue k ())
+      | _ -> None)
+    }
 
 let toplet_clauses stack lst =
   let rec fold stack' vs = function
