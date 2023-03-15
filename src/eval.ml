@@ -167,20 +167,19 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : Runtime.stack * Value
      end
 
   | Syntax.While (b, c) ->
-     let rec loop fuel stack =
+     let granularity = 1000 in
+     let rec loop k stack =
+       if k = 0 then (* we should yield here *) () ;
        let v = comp_ro ~prec stack b in
        begin match as_boolean ~loc:(b.Location.loc) v with
        | false -> stack, Value.CNone
        | true ->
-          if fuel < 0 then
-            raise Runtime.NoFuel
-          else
-            let stack, v = comp ~prec stack c in
-            let () = as_unit ~loc:(c.Location.loc) v in
-            loop (fuel-1) stack
+          let stack, v = comp ~prec stack c in
+          let () = as_unit ~loc:(c.Location.loc) v in
+          loop ((k + 1) mod granularity) stack
        end
      in
-     loop prec.Runtime.prec_while stack
+     loop 1 stack
 
   | Syntax.Newvar (lst, c) ->
      let rec fold stack' = function
@@ -322,12 +321,6 @@ let topcomp ~max_prec stack ({Location.loc;_} as c) =
             Print.message ~loc "Runtime" "Loss of precision at %t" (Runtime.print_prec prec) ;
           let prec = Runtime.next_prec ~loc prec in
           loop prec
-        | Runtime.NoFuel ->
-          if !Config.verbose then
-            Print.message ~loc "Runtime" "Lack of fuel at %t" (Runtime.print_prec prec) ;
-          match Runtime.next_fuel ~loc prec with
-          | Some prec -> loop prec
-          | None -> Runtime.error ~loc Runtime.FuelOverflow
     end
   in
   loop (Runtime.initial_prec ())
