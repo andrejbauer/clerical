@@ -64,3 +64,34 @@ Please consult:
 * [`doc/syntax.md`](doc/syntax.md) for a brief explanation of the syntax
 * [`examples`](./examples) for examples of Clerical programs
 * [`prelude.real`)(./prelude.real) for the built-in functions and operators
+
+## How the parallel features work
+
+We outline here how Clerical uses cooperative multi-threading, effects, and handlers.
+
+The evaluation of a Clerical expression is represented by a *thread*. When the thread is started, it receives two parameters: *working
+precision* `p` and *loop fuel* `f`. It performs MPFR operations at precision `p`, and it runs `while` loops for at most `f` iterations. A thread may peform the following actions:
+
+* It may perform the operation `Yield`, indicating that another thread can run. Every thread does this periodically.
+* If it terminates with value `v` it raises the exception `Result v`.
+* If it experiences loss of precision or it runs out of fuel, it performs the operation `Resign`. If the thread is resumed, it will restart computations with a higher working precision, and will give itself more fuel to complete any ongoing loops.
+
+A suspended thread may be discontinued by passing it the `Abort` exception.
+
+### Guarded case
+
+The guarded `case` runs all the cases as separate threads, using a simple round-robin scheduler. It keeps a queue of active threads, and
+a list of *resigned threads* that experienced precision loss or ran out of fuel.
+
+The active threads are executed using a simple round-robin schedule:
+
+* If a thread terminates with value `Some c`, in which case all the other threads are discarded and `c` is evaluated.
+* If a thread terminates with value `None`, it is discarded.
+* If a thread resings, it is placed onto the list of resigned threads.
+
+Once the queue of active threads becomes empty:
+
+* If there are any resigned threads, the operation `Resign` is performed. Upon resumption, all the resigned threads are resumed.
+* If there are no resigned threads, the exception `InvalidCase` is raised.
+
+
