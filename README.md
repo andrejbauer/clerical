@@ -72,8 +72,8 @@ We outline here how Clerical uses cooperative multi-threading, effects, and hand
 The evaluation of a Clerical expression is represented by a *thread*. When the thread is started, it receives two parameters: *working
 precision* `p` and *loop fuel* `f`. It performs MPFR operations at precision `p`, and it runs `while` loops for at most `f` iterations. A thread may peform the following actions:
 
+* It may terminate with a resulting value `v`.
 * It may perform the operation `Yield`, indicating that another thread can run. Every thread does this periodically.
-* If it terminates with value `v` it raises the exception `Result v`.
 * If it experiences loss of precision or it runs out of fuel, it performs the operation `Resign`. If the thread is resumed, it will restart computations with a higher working precision, and will give itself more fuel to complete any ongoing loops.
 
 A suspended thread may be discontinued by passing it the `Abort` exception.
@@ -92,6 +92,6 @@ The active threads are executed using a simple round-robin schedule:
 Once the queue of active threads becomes empty:
 
 * If there are any resigned threads, the operation `Resign` is performed. Upon resumption, all the resigned threads are resumed (with better precision and more fuel).
-* If there are no resigned threads, the exception `InvalidCase` is raised.
+* If there are no resigned threads, the error `InvalidCase` is reported.
 
 

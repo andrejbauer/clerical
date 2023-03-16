@@ -98,13 +98,18 @@ let as_value ~loc v =
   | None -> Runtime.error ~loc Runtime.ValueExpected
   | Some v -> v
 
-(** Evaluation of guards using cooperative threads. *)
+(** The effects for cooperative threads *)
 
 type _ Effect.t += Yield : unit Effect.t
+                 | Resign : unit Effect.t
 
-exception Success of Syntax.comp
+exception Abort
 
 let yield () = Effect.perform Yield
+
+let resign () = Effect.perform Resign
+
+let abort () = raise Abort
 
 (** [comp ~prec n stack c] evaluates computation [c] in the given [stack] at
     precision level [n], and returns the new stack and the computed value. *)
@@ -159,12 +164,7 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : Runtime.stack * Value
      end
 
   | Syntax.Case cases ->
-     begin try
-       comp_guards ~prec stack cases ;
-       raise Runtime.NoPrecision
-     with
-     | Success c -> comp ~prec stack c
-     end
+     comp_guards ~loc ~prec stack cases
 
   | Syntax.While (b, c) ->
      let granularity = 1000 in
@@ -264,43 +264,63 @@ and comp_ro ~prec stack c : Value.result = snd (comp ~prec (make_ro stack) c)
 and comp_ro_value ~prec stack c =
   as_value ~loc:(c.Location.loc) (comp_ro ~prec stack c)
 
-and comp_guards ~prec stack cases =
+and comp_guards ~loc ~prec stack cases =
   let open Effect in
   let open Effect.Deep in
-  let queue : (unit -> unit) Queue.t = Queue.create () in
+  let queue : (unit -> Syntax.comp option) Queue.t = Queue.create () in
+  let resigned = ref [] in
   let enqueue k v = Queue.push (fun () -> continue k v) queue in
-  let dequeue () =
-    if Queue.is_empty queue
-    then
-      raise Runtime.NoPrecision
-    else
-      Queue.pop queue ()
+  let rec dequeue () : Syntax.comp =
+    let t =
+    match Queue.take_opt queue with
+    | Some t -> t
+    | None ->
+      begin match !resigned with
+        | [] -> Runtime.(error ~loc InvalidCase)
+        | _::_ as lst ->
+           resign () ;
+           List.iter (fun t -> Queue.add t queue) lst ;
+           resigned := [] ;
+           Queue.pop queue
+      end
+    in
+    match t () with
+    | None -> dequeue ()
+    | Some c -> c
   in
-  let make_thread (b, c) () =
+  let rec make_thread ~prec (b, c) () =
+    let loc = b.Location.loc in
     try
       if
         (let v = comp_ro ~prec stack b in
-         as_boolean ~loc:(b.Location.loc) v)
+         as_boolean ~loc v)
       then
-        raise (Success c)
+        Some c
       else
-        ()
+        None
     with
-    | Runtime.NoPrecision -> ()
+    | Runtime.NoPrecision ->
+       resign () ;
+       let prec = Runtime.next_prec ~loc prec in
+       make_thread ~prec (b, c) ()
   in
   (* Put all the cases into the queue, with the first guard at the start of the queue *)
-  List.iter (fun bc -> Queue.add (make_thread bc) queue) (List.rev cases) ;
-  match_with
-    dequeue
-    ()
-    {
-      retc = dequeue
-    ; exnc = (fun exc -> raise exc)
-    ; effc = (fun (type a) (eff : a t) ->
-      match eff with
-      | Yield -> Some (fun (k : (a, unit) continuation) -> enqueue k () ; dequeue ())
-      | _ -> None)
-    }
+  List.iter (fun bc -> Queue.add (make_thread ~prec bc) queue) (List.rev cases) ;
+  let c =
+    match_with
+      dequeue
+      ()
+      {
+        retc = (fun v -> v)
+      ; exnc = (fun exc -> raise exc)
+      ; effc = (fun (type a) (eff : a t) ->
+        match eff with
+        | Yield -> Some (fun (k : (a, Syntax.comp) continuation) -> enqueue k () ; dequeue ())
+        | Resign -> Some (fun (k : (a, Syntax.comp) continuation) -> resigned := k :: !resigned ; dequeue ())
+        | _ -> None)
+      }
+  in
+  comp ~prec stack c
 
 
 let topcomp ~max_prec stack ({Location.loc;_} as c) =
