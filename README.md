@@ -91,7 +91,7 @@ The active threads are executed using a simple round-robin schedule:
 
 Once the queue of active threads becomes empty:
 
-* If there are any resigned threads, the operation `Resign` is performed. Upon resumption, all the resigned threads are resumed.
+* If there are any resigned threads, the operation `Resign` is performed. Upon resumption, all the resigned threads are resumed (with better precision and more fuel).
 * If there are no resigned threads, the exception `InvalidCase` is raised.
 
 
