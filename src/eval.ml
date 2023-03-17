@@ -98,18 +98,7 @@ let as_value ~loc v =
   | None -> Runtime.error ~loc Runtime.ValueExpected
   | Some v -> v
 
-(** The effects for cooperative threads *)
-
-type _ Effect.t += Yield : unit Effect.t
-                 | Resign : unit Effect.t
-
-exception Abort
-
-let yield () = Effect.perform Yield
-
-let resign () = Effect.perform Resign
-
-let abort () = raise Abort
+module F = Fiber.Make(struct type t = Syntax.comp end)
 
 (** [comp ~prec n stack c] evaluates computation [c] in the given [stack] at
     precision level [n], and returns the new stack and the computed value. *)
@@ -164,12 +153,12 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : Runtime.stack * Value
      end
 
   | Syntax.Case cases ->
-     comp_guards ~loc ~prec stack cases
+     comp_case ~loc ~prec stack cases
 
   | Syntax.While (b, c) ->
      let granularity = 1000 in
      let rec loop k stack =
-       if k = 0 then yield () ;
+       if k = 0 then F.yield () ;
        let v = comp_ro ~prec stack b in
        begin match as_boolean ~loc:(b.Location.loc) v with
        | false -> stack, Value.CNone
@@ -264,62 +253,21 @@ and comp_ro ~prec stack c : Value.result = snd (comp ~prec (make_ro stack) c)
 and comp_ro_value ~prec stack c =
   as_value ~loc:(c.Location.loc) (comp_ro ~prec stack c)
 
-and comp_guards ~loc ~prec stack cases =
-  let open Effect in
-  let open Effect.Deep in
-  let queue : (unit -> Syntax.comp option) Queue.t = Queue.create () in
-  let resigned = ref [] in
-  let enqueue k v = Queue.push (fun () -> continue k v) queue in
-  let rec dequeue () : Syntax.comp =
-    let t =
-    match Queue.take_opt queue with
-    | Some t -> t
-    | None ->
-      begin match !resigned with
-        | [] -> Runtime.(error ~loc InvalidCase)
-        | _::_ as lst ->
-           resign () ;
-           List.iter (fun t -> Queue.add t queue) lst ;
-           resigned := [] ;
-           Queue.pop queue
-      end
-    in
-    match t () with
-    | None -> dequeue ()
-    | Some c -> c
-  in
+(* Evaluate a case statement using cooperative threads. *)
+and comp_case ~loc ~prec stack cases =
   let rec make_thread ~prec (b, c) () =
     let loc = b.Location.loc in
     try
-      if
-        (let v = comp_ro ~prec stack b in
-         as_boolean ~loc v)
-      then
-        Some c
-      else
-        None
+      if as_boolean ~loc (comp_ro ~prec stack b)
+      then F.return c
+      else F.abort ()
     with
     | Runtime.NoPrecision ->
-       resign () ;
+       F.resign () ;
        let prec = Runtime.next_prec ~loc prec in
        make_thread ~prec (b, c) ()
   in
-  (* Put all the cases into the queue, with the first guard at the start of the queue *)
-  List.iter (fun bc -> Queue.add (make_thread ~prec bc) queue) (List.rev cases) ;
-  let c =
-    match_with
-      dequeue
-      ()
-      {
-        retc = (fun v -> v)
-      ; exnc = (fun exc -> raise exc)
-      ; effc = (fun (type a) (eff : a t) ->
-        match eff with
-        | Yield -> Some (fun (k : (a, Syntax.comp) continuation) -> enqueue k () ; dequeue ())
-        | Resign -> Some (fun (k : (a, Syntax.comp) continuation) -> resigned := k :: !resigned ; dequeue ())
-        | _ -> None)
-      }
-  in
+  let c = F.run_fibers (List.map (make_thread ~prec) cases) in
   comp ~prec stack c
 
 
@@ -345,20 +293,11 @@ let topcomp ~max_prec stack ({Location.loc;_} as c) =
   in
   let open Effect in
   let open Effect.Deep in
-  (* Install a handler that reactivates all Yields *)
+  (* Install a handler that reactivates all Yields and Resigns *)
   match_with
     loop
     (Runtime.initial_prec ())
-    {
-      retc = (fun v -> v)
-    ; exnc = (fun exc -> raise exc)
-    ; effc = (fun (type a) (eff : a t) ->
-      match eff with
-      | Yield -> Some (fun (k : (a, Value.result) continuation) ->
-                     if !Config.verbose then Print.message ~loc "Runtime" "Yield!" ;
-                     continue k ())
-      | _ -> None)
-    }
+    F.defibrillator
 
 let toplet_clauses stack lst =
   let rec fold stack' vs = function
