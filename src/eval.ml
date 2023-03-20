@@ -98,6 +98,7 @@ let as_value ~loc v =
   | None -> Runtime.error ~loc Runtime.ValueExpected
   | Some v -> v
 
+(** Support for fibers *)
 module F = Fiber.Make(struct type t = Syntax.comp end)
 
 (** [comp ~prec n stack c] evaluates computation [c] in the given [stack] at
@@ -289,15 +290,14 @@ let topcomp ~max_prec stack ({Location.loc;_} as c) =
             Print.message ~loc "Runtime" "Loss of precision at %t" (Runtime.print_prec prec) ;
           let prec = Runtime.next_prec ~loc prec in
           loop prec
+        | F.Abort -> Runtime.(error ~loc InvalidCase)
     end
   in
-  let open Effect.Deep in
-  let module G = Fiber.Make(struct type t = Value.result end) in
   (* Install a handler that reactivates all Yields and Resigns *)
-  match_with
+  Effect.Deep.match_with
     loop
     (Runtime.initial_prec ())
-    G.defibrillator
+    F.defibrillator
 
 let toplet_clauses stack lst =
   let rec fold stack' vs = function

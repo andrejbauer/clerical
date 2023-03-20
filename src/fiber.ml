@@ -56,10 +56,14 @@ let run_fibers (fibers : (unit -> R.t) list) : R.t =
     resigned := []
   in
 
-  (** Properly dispose of all fibers *)
+  (** Properly dispose of all fibers. *)
   let discontinue_fibers () =
-    Queue.iter (fun k -> ignore (discontinue k Abort)) active ;
-    List.iter (fun k -> ignore (discontinue k Abort)) !resigned
+    (* It may happen that this function gets called a second time
+       by a discontinued thread, so we first clear the queue. *)
+    let lst = !resigned @ Queue.fold (fun fs f -> f :: fs) [] active in
+    resigned := [] ;
+    Queue.clear active ;
+    List.iter (fun k -> try ignore (discontinue k Abort) with Abort -> ()) lst
   in
 
   (** Dequeue a fiber and activate it, if there is one. *)
@@ -89,9 +93,9 @@ let run_fibers (fibers : (unit -> R.t) list) : R.t =
       ; exnc = (function Abort -> dequeue () | exc -> raise exc)
       ; effc = (fun (type a) (eff : a Effect.t) ->
         match eff with
-        | Fork f ->Some (fun (k : (a, R.t) continuation) -> enqueue k ; run f)
-        | Yield -> Some (fun (k : (a, R.t) continuation) -> enqueue k ; dequeue ())
-        | Resign -> Some (fun (k : (a, R.t) continuation) -> shelf k ; dequeue ())
+        | Fork f ->Some (fun (k : (a, 'b) continuation) -> enqueue k ; run f)
+        | Yield -> Some (fun (k : (a, 'b) continuation) -> enqueue k ; dequeue ())
+        | Resign -> Some (fun (k : (a, 'b) continuation) -> shelf k ; dequeue ())
         | _ -> None
       )
       }
