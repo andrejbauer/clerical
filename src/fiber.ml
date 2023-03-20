@@ -10,7 +10,6 @@ type fiber = (unit, R.t) continuation
 (** A fiber may yield, resign, or abort. *)
 type _ Effect.t +=
    | Fork : (unit -> R.t) -> unit Effect.t
-   | Yield : unit Effect.t (* Yield to another fiber *)
    | Resign : unit Effect.t (* Stop execution due to precission loss or spent fuel *)
 
 exception Abort (* Abort execution without possibility of resumption *)
@@ -20,9 +19,6 @@ let return x = x
 
 (** Fork a fiber. *)
 let fork f = Effect.perform (Fork f)
-
-(** Yield to another fiber. *)
-let yield () = Effect.perform Yield
 
 (** Give up due to precision loss or spent loop fuel.
     Upon resumption, either restart with better precision, or resume with more fuel.
@@ -94,7 +90,6 @@ let run_fibers (fibers : (unit -> R.t) list) : R.t =
       ; effc = (fun (type a) (eff : a Effect.t) ->
         match eff with
         | Fork f ->Some (fun (k : (a, 'b) continuation) -> enqueue k ; run f)
-        | Yield -> Some (fun (k : (a, 'b) continuation) -> enqueue k ; dequeue ())
         | Resign -> Some (fun (k : (a, 'b) continuation) -> shelf k ; dequeue ())
         | _ -> None
       )
@@ -108,7 +103,6 @@ let defibrillator =
   ; exnc = (fun ex -> raise ex)
   ; effc = (fun (type a) (eff : a Effect.t) ->
     match eff with
-    | Yield -> Some (fun (k : (a, 'b) continuation) -> continue k ())
     | Resign -> Some (fun (k : (a, 'b) continuation) -> continue k ())
     | _ -> None
   )
