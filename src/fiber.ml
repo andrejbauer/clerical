@@ -7,10 +7,10 @@ open Effect.Deep
 
 type fiber = (unit, R.t) continuation
 
-(** A fiber may yield, resign, or abort. *)
+(** A fiber may for a new fiber, yield or abort. *)
 type _ Effect.t +=
    | Fork : (unit -> R.t) -> unit Effect.t
-   | Resign : unit Effect.t (* Stop execution due to precission loss or spent fuel *)
+   | Yield : unit Effect.t (* Stop execution due to precission loss or spent fuel *)
 
 exception Abort (* Abort execution without possibility of resumption *)
 
@@ -20,77 +20,80 @@ let return x = x
 (** Fork a fiber. *)
 let fork f = Effect.perform (Fork f)
 
-(** Give up due to precision loss or spent loop fuel.
+(** Yield due to precision loss or spent loop fuel.
     Upon resumption, either restart with better precision, or resume with more fuel.
  *)
-let resign () = Effect.perform Resign
+let yield () = Effect.perform Yield
 
 (** Give up without possibility of resumption. *)
 let abort () = raise Abort
 
 let run_fibers (fibers : (unit -> R.t) list) : R.t =
 
-  (* the queue of active fibers *)
-  let active : fiber Queue.t = Queue.create () in
+  (** The queue of active fibers *)
+  let active = Queue.create () in
 
-  (* the list of resigned fibers *)
-  let resigned : fiber list ref = ref [] in
+  (** The queue of inactive fibers *)
+  let inactive = Queue.create () in
 
-  (* enqueue a continuation as a fiber *)
+  (** Enqueue a continuation as an active fiber. *)
   let enqueue (k : fiber) =
     Queue.push k active
   in
 
+  (** Place an inactive fiber into the inactive queue. *)
   let shelf (k : fiber) =
-    resigned := k :: !resigned
+    Queue.push k inactive
   in
 
+  (** Make inactive fibers active. *)
   let unshelf_all () =
-    (* Make resigned fibers active. *)
-    List.iter (fun k -> Queue.add k active) !resigned ;
-    (* Clear the queue. *)
-    resigned := []
+    while not (Queue.is_empty inactive) do
+      Queue.add (Queue.take inactive) active
+    done
   in
 
   (** Properly dispose of all fibers. *)
-  let discontinue_fibers () =
-    (* It may happen that this function gets called a second time
-       by a discontinued thread, so we first clear the queue. *)
-    let lst = !resigned @ Queue.fold (fun fs f -> f :: fs) [] active in
-    resigned := [] ;
+  let discontinue_all () =
+    let to_list = Queue.fold (fun fs f -> f :: fs) [] in
+    let lst = to_list inactive @ to_list active in
+    Queue.clear inactive ;
     Queue.clear active ;
     List.iter (fun k -> try ignore (discontinue k Abort) with Abort -> ()) lst
   in
 
   (** Dequeue a fiber and activate it, if there is one. *)
   let dequeue () : R.t =
+    if Queue.is_empty active then
+      begin
+        (* The active queue is empty, we restart the inactive fibers. *)
+        unshelf_all () ;
+        (* Before proceeding, we yield so that outer-level fibers can run.*)
+        yield ()
+      end ;
+    (* Pop a fiber off the queue and run it, or abort if none are available. *)
     match Queue.take_opt active with
     | Some k -> continue k ()
-    | None ->
-       begin match !resigned with
-       | [] -> raise Abort
-       | _::_ ->
-          (* Wait until we're told to restart the resigned fibers. *)
-          try
-            resign () ;
-            unshelf_all () ;
-            continue (Queue.pop active) ()
-          with
-          | Abort -> discontinue_fibers () ; raise Abort
-          end
+    | None -> abort ()
   in
 
-  (* Run fibers, take the result of the first one that terminates. *)
+  (* Run fibers, and take the result of the first one that terminates. *)
   let rec run main =
     match_with
       main
       ()
-      { retc = (fun v -> discontinue_fibers () ; v)
-      ; exnc = (function Abort -> dequeue () | exc -> raise exc)
+      { retc = (fun v -> discontinue_all () ; v)
+      ; exnc = (function
+                | Abort ->
+                   (* if the fiber aborts we try another one *)
+                   dequeue ()
+                | exc ->
+                   (* other exceptions propagate outwards *)
+                   raise exc)
       ; effc = (fun (type a) (eff : a Effect.t) ->
         match eff with
         | Fork f ->Some (fun (k : (a, 'b) continuation) -> enqueue k ; run f)
-        | Resign -> Some (fun (k : (a, 'b) continuation) -> shelf k ; dequeue ())
+        | Yield -> Some (fun (k : (a, 'b) continuation) -> shelf k ; dequeue ())
         | _ -> None
       )
       }
@@ -98,12 +101,14 @@ let run_fibers (fibers : (unit -> R.t) list) : R.t =
 
   run (fun () -> List.iter fork fibers ; abort ())
 
+(** Top-level handler that just restarts any fiber that yields.
+    It does not support forking of new fibers. *)
 let defibrillator =
   { retc = (fun v -> v)
   ; exnc = (fun ex -> raise ex)
   ; effc = (fun (type a) (eff : a Effect.t) ->
     match eff with
-    | Resign -> Some (fun (k : (a, 'b) continuation) -> continue k ())
+    | Yield -> Some (fun (k : (a, 'b) continuation) -> continue k ())
     | _ -> None
   )
   }

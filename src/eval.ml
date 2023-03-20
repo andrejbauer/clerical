@@ -159,7 +159,7 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : Runtime.stack * Value
   | Syntax.While (b, c) ->
      let granularity = 1000 in
      let rec loop k stack =
-       if k = 0 then F.resign () ;
+       if k = 0 then F.yield () ;
        let v = comp_ro ~prec stack b in
        begin match as_boolean ~loc:(b.Location.loc) v with
        | false -> stack, Value.CNone
@@ -264,7 +264,7 @@ and comp_case ~loc ~prec stack cases =
       else F.abort ()
     with
     | Runtime.NoPrecision ->
-       F.resign () ;
+       F.yield () ;
        let prec = Runtime.next_prec ~loc prec in
        make_thread ~prec (b, c) ()
   in
