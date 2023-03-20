@@ -158,7 +158,7 @@ let rec comp ~prec stack {Location.data=c; Location.loc} : Runtime.stack * Value
   | Syntax.While (b, c) ->
      let granularity = 1000 in
      let rec loop k stack =
-       if k = 0 then F.yield () ;
+       if k = 0 then F.resign () ;
        let v = comp_ro ~prec stack b in
        begin match as_boolean ~loc:(b.Location.loc) v with
        | false -> stack, Value.CNone
@@ -291,13 +291,13 @@ let topcomp ~max_prec stack ({Location.loc;_} as c) =
           loop prec
     end
   in
-  let open Effect in
   let open Effect.Deep in
+  let module G = Fiber.Make(struct type t = Value.result end) in
   (* Install a handler that reactivates all Yields and Resigns *)
   match_with
     loop
     (Runtime.initial_prec ())
-    F.defibrillator
+    G.defibrillator
 
 let toplet_clauses stack lst =
   let rec fold stack' vs = function

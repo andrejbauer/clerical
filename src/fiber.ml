@@ -84,9 +84,9 @@ let run_fibers (fibers : (unit -> R.t) list) : R.t =
   in
 
   (* Run fibers, take the result of the first one that terminates. *)
-  let rec run f =
+  let rec run main =
     match_with
-      f
+      main
       ()
       { retc = (fun v -> discontinue_fibers () ; v)
       ; exnc = (function Abort -> dequeue () | exc -> raise exc)
@@ -107,8 +107,8 @@ let defibrillator =
   ; exnc = (fun ex -> raise ex)
   ; effc = (fun (type a) (eff : a Effect.t) ->
     match eff with
-    | Yield -> Some (fun (k : (a, R.t) continuation) -> continue k ())
-    | Resign -> Some (fun (k : (a, R.t) continuation) -> continue k ())
+    | Yield -> Some (fun (k : (a, 'b) continuation) -> continue k ())
+    | Resign -> Some (fun (k : (a, 'b) continuation) -> continue k ())
     | _ -> None
   )
   }
