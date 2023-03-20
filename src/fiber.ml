@@ -5,9 +5,6 @@ struct
 
 open Effect.Deep
 
-(** When a fiber is restarted, it is told whether it should continue or
-    release its resources and discontinue. *)
-
 type fiber = (unit, R.t) continuation
 
 (** A fiber may yield, resign, or abort. *)
