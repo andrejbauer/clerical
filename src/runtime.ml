@@ -96,8 +96,8 @@ let print_prec {prec_mpfr=k; _} ppf =
 (** The top frame is the one that we can write into, all
     the other frames are read-only. *)
 type stack = {
-    frame : (Name.ident * entry) list ;
-    frames : (Name.ident * entry) list list ;
+    frame : (Name.ident * entry) list ; (* read-write *)
+    frames : (Name.ident * entry) list list ; (* read-only *)
     funs : (loc:Location.t -> prec:precision -> Value.value list -> Value.result) list
 }
 
