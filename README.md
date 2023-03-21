@@ -44,9 +44,9 @@ To compile Clerical, run the following command in the Clerical directory:
 
     dune build
 
-Dune compiles the program and hides the executable in `_build/default/src/clerical.exe`, so try running it with
+Dune compiles the program and creates the executable `clerical.exe` (also on MacOS and Linux). You can run it with:
 
-    _build/default/src/clerical.exe --prelude prelude.real
+    ./clerical.exe --prelude prelude.real
 
 
 ## Repository structure

@@ -1,6 +1,7 @@
 (executable
   (name "clerical")
   (public_name "clerical")
+  (promote (until-clean) (into ..))
   (flags -w +a-4-27-29-42-50-70)
   (libraries sedlex gmp menhirLib)
   (preprocess (pps sedlex.ppx)))

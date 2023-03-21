@@ -1,8 +1,2 @@
-*.glob
-*.vo
-*.v.d
-/formalization/Makefile
 _build
-/clerical.native
-*.native
-/formalization/Makefile.conf
+*.exe
