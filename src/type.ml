@@ -1,13 +1,8 @@
 (* Value types *)
-type valty =
-  | Boolean
-  | Integer
-  | Real
+type valty = Boolean | Integer | Real
 
 (* Command types *)
-type cmdty =
-  | Data of valty
-  | Command
+type cmdty = Data of valty | Command
 
 (* Function types *)
 type funty = valty list * cmdty
@@ -26,11 +21,10 @@ let print_cmdty t ppf =
   | Command -> Format.fprintf ppf "command"
 
 let print_funty (ts, t) ppf =
-   Format.fprintf ppf "(%t) -> %t"
-     (fun ppf ->
-       Format.pp_print_list
-         ~pp_sep:(fun ppf () -> Format.fprintf ppf ", ")
-         (fun ppf dt -> print_valty dt ppf)
-         ppf
-         ts)
-     (print_cmdty t)
+  Format.fprintf ppf "(%t) -> %t"
+    (fun ppf ->
+      Format.pp_print_list
+        ~pp_sep:(fun ppf () -> Format.fprintf ppf ", ")
+        (fun ppf dt -> print_valty dt ppf)
+        ppf ts)
+    (print_cmdty t)

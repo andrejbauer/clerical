@@ -1,17 +1,10 @@
 (* Runtime values *)
 
 (** Values stored in variables *)
-type value =
-  | VBoolean of bool
-  | VInteger of Mpzf.t
-  | VReal of Real.t
+type value = VBoolean of bool | VInteger of Mpzf.t | VReal of Real.t
 
 (** Results of computations *)
-type result =
-  | CBoolean of bool
-  | CInteger of Mpzf.t
-  | CReal of Real.t
-  | CNone
+type result = CBoolean of bool | CInteger of Mpzf.t | CReal of Real.t | CNone
 
 (** Embed a value into results *)
 let return = function

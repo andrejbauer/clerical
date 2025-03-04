@@ -71,7 +71,7 @@ let run_fibers (fibers : (unit -> R.t) list) : R.t =
           begin
             fun (type a) (eff : a Effect.t) ->
             match eff with
-            | Fork f ->Some (fun (k : (a, 'b) continuation) -> enqueue k ; run f)
+            | Fork f -> Some (fun (k : (a, 'b) continuation) -> enqueue k ; run f)
             | Yield -> Some (fun (k : (a, 'b) continuation) -> enqueue k ; yield () ; dequeue ())
             | _ -> None
           end

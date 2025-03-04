@@ -4,6 +4,7 @@ type cmdty = TData of valty | TCommand
 type funty = valty list * cmdty
 
 type comp = comp' Location.located
+
 and comp' =
   | Var of Name.ident
   | Boolean of bool
@@ -22,6 +23,7 @@ and comp' =
   | Trace
 
 type toplevel = toplevel' Location.located
+
 and toplevel' =
   | TopDo of comp
   | TopFunction of Name.ident * (Name.ident * valty) list * comp

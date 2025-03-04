@@ -29,8 +29,8 @@ type runtime_error =
 
 exception Error of runtime_error Location.located
 
-(** Exception that signals loss of precision *)
 exception NoPrecision
+(** Exception that signals loss of precision *)
 
 (** [error ~loc err] raises the given runtime error. *)
 let error ~loc err = Stdlib.raise (Error (Location.locate ~loc err))
@@ -39,7 +39,8 @@ let error ~loc err = Stdlib.raise (Error (Location.locate ~loc err))
 let rec print_error err ppf =
   match err with
   | CallTrace (loc, err) ->
-     Format.fprintf ppf "(call at %t)@\n%t" (Location.print loc) (print_error err)
+      Format.fprintf ppf "(call at %t)@\n%t" (Location.print loc)
+        (print_error err)
   | OutOfStack -> Format.fprintf ppf "invalid stack position"
   | UnitExpected -> Format.fprintf ppf "did not expect a return value here"
   | BooleanExpected -> Format.fprintf ppf "boolean expected"
@@ -47,59 +48,49 @@ let rec print_error err ppf =
   | RealExpected -> Format.fprintf ppf "real expected"
   | NonnegativeRealExpected -> Format.fprintf ppf "non-negative real expected"
   | ValueExpected -> Format.fprintf ppf "a value expected"
-  | PrecisionLoss -> Format.fprintf ppf "loss of precision, try increasing --max-prec"
+  | PrecisionLoss ->
+      Format.fprintf ppf "loss of precision, try increasing --max-prec"
   | CannotWrite -> Format.fprintf ppf "cannot write into a read-only position"
   | InvalidFunction -> Format.fprintf ppf "invalid function application"
   | InvalidCase -> Format.fprintf ppf "invalid case statement"
   | InvalidExternal s -> Format.fprintf ppf "invalid application of %s" s
-  | UnknownExternal s ->  Format.fprintf ppf "unknown external function %s" s
+  | UnknownExternal s -> Format.fprintf ppf "unknown external function %s" s
   | InternalError s -> Format.fprintf ppf "internal error (%s)" s
 
 (** A stack entry *)
 type entry =
-  | RO of Value.value       (** read-only stack value *)
-  | RW of Value.value ref   (** read-write stack value *)
+  | RO of Value.value  (** read-only stack value *)
+  | RW of Value.value ref  (** read-write stack value *)
 
+type precision = { prec_mpfr_min : int; prec_lim_min : int; prec_mpfr : int }
 (** Precision describes at what precision we run MPFR (the field [prec_mpfr])
-    and which elements of limits we are computing [prec_lim]. We also
-    record the starting values. The field prec_while gives the maximum
-    number of iterations allowed in a while loop.
-*)
-type precision =
-  {
-    prec_mpfr_min : int;
-    prec_lim_min : int;
-    prec_mpfr : int;
-  }
+    and which elements of limits we are computing [prec_lim]. We also record the
+    starting values. The field prec_while gives the maximum number of iterations
+    allowed in a while loop. *)
 
-
-(** In absence of any knowledge, we scan for each value of [prec_mpfr]
-    all values of [prec_lim] up to [prec_mpfr]. *)
+(** In absence of any knowledge, we scan for each value of [prec_mpfr] all
+    values of [prec_lim] up to [prec_mpfr]. *)
 let next_prec ~loc
-    ({prec_mpfr_min=k0; prec_lim_min=n0; prec_mpfr=k} as prec) =
+    ({ prec_mpfr_min = k0; prec_lim_min = n0; prec_mpfr = k } as prec) =
   (* if 2 * n < k then { prec with prec_lim = n + 1} *)
   (* else  *)
   if k >= !Config.max_prec then error ~loc PrecisionLoss
-  else { prec with prec_mpfr = 1 + 3 * k / 2}
+  else { prec with prec_mpfr = 1 + (3 * k / 2) }
 
 let initial_prec () =
-  let k0 = max 2 !Config.init_prec
-  and n0 = 0 in
-  { prec_mpfr_min = k0 ;
-    prec_lim_min = n0 ;
-    prec_mpfr = k0 ;
-  }
+  let k0 = max 2 !Config.init_prec and n0 = 0 in
+  { prec_mpfr_min = k0; prec_lim_min = n0; prec_mpfr = k0 }
 
-let print_prec {prec_mpfr=k; _} ppf =
-  Format.fprintf ppf "(mpfr=%d)" k
+let print_prec { prec_mpfr = k; _ } ppf = Format.fprintf ppf "(mpfr=%d)" k
 
-(** The top frame is the one that we can write into, all
-    the other frames are read-only. *)
 type stack = {
-    frame : (Name.ident * entry) list ; (* read-write *)
-    frames : (Name.ident * entry) list list ; (* read-only *)
-    funs : (loc:Location.t -> prec:precision -> Value.value list -> Value.result) list
+  frame : (Name.ident * entry) list; (* read-write *)
+  frames : (Name.ident * entry) list list; (* read-only *)
+  funs :
+    (loc:Location.t -> prec:precision -> Value.value list -> Value.result) list;
 }
+(** The top frame is the one that we can write into, all the other frames are
+    read-only. *)
 
 (** Initial stack *)
-let initial = { frame = [] ; frames = [] ; funs = [] }
+let initial = { frame = []; frames = []; funs = [] }

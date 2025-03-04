@@ -2,10 +2,10 @@
 
 (* We use de Bruijn indices for variables *)
 type index = int
-
 type operator = string
 
 type comp = comp' Location.located
+
 and comp' =
   | Var of index
   | Boolean of bool
@@ -24,6 +24,7 @@ and comp' =
   | Trace
 
 type toplevel = toplevel' Location.located
+
 and toplevel' =
   | TopDo of comp
   | TopFunction of Name.ident * (Name.ident * Type.valty) list * comp
@@ -31,11 +32,13 @@ and toplevel' =
   | TopFile of toplevel list
   | TopPrecision of int
 
-(** Toplevel command annotated with types *)
 type tytoplevel = tytoplevel' Location.located
+(** Toplevel command annotated with types *)
+
 and tytoplevel' =
   | TyTopDo of comp * Type.cmdty
-  | TyTopFunction of Name.ident * (Name.ident * Type.valty) list * comp * Type.cmdty
+  | TyTopFunction of
+      Name.ident * (Name.ident * Type.valty) list * comp * Type.cmdty
   | TyTopExternal of Name.ident * string * Type.funty
   | TyTopFile of tytoplevel list
   | TyTopPrecision of int
