@@ -1,3 +1,4 @@
+open Eio.Std
 (** Clerial main program *)
 
 (** The usage message. *)
@@ -54,12 +55,12 @@ let options =
     ]
 
 (** Interactive toplevel *)
-let interactive_shell state =
+let interactive_shell ~pool state =
   Format.printf "Clerical %s@." Build.version;
 
   let rec loop state =
     let state =
-      try Toplevel.exec_interactive state with
+      try Toplevel.exec_interactive ~pool state with
       | Ulexbuf.Error { Location.data = err; Location.loc } ->
           Print.message ~loc "Syntax error" "%t" (Ulexbuf.print_error err);
           state
@@ -81,7 +82,7 @@ let interactive_shell state =
   try loop state with End_of_file -> ()
 
 (** Main program *)
-let _main =
+let _main ~pool =
   Sys.catch_break true;
   (* Parse the arguments. *)
   Arg.parse options
@@ -109,11 +110,12 @@ let _main =
     (* Run and load all the specified files. *)
     let topstate =
       List.fold_left
-        (fun topstate (fn, quiet) -> Toplevel.load_file ~quiet topstate fn)
+        (fun topstate (fn, quiet) ->
+          Toplevel.load_file ~pool ~quiet topstate fn)
         Toplevel.initial !files
     in
 
-    if !Config.interactive_shell then interactive_shell topstate else ()
+    if !Config.interactive_shell then interactive_shell ~pool topstate else ()
   with
   | Ulexbuf.Error { Location.data = err; Location.loc } ->
       Print.message ~loc "Syntax error" "%t" (Ulexbuf.print_error err)
@@ -123,3 +125,13 @@ let _main =
       Print.message ~loc "Type error" "%t" (Typecheck.print_error err)
   | Runtime.Error { Location.data = err; Location.loc } ->
       Print.message ~loc "Runtime error" "%t" (Runtime.print_error err)
+
+let domains = Domain.recommended_domain_count ()
+(* TODO: *)
+(* let domains = 8 *)
+
+let () =
+  Eio_main.run @@ fun env ->
+  Switch.run @@ fun sw ->
+  let dm = Eio.Stdenv.domain_mgr env in
+  _main ~pool:(Eio.Executor_pool.create ~sw ~domain_count:domains dm)

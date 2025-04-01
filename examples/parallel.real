@@ -1,9 +1,18 @@
 function parallel():
   case
-  | (var i := 0 in while i < 100000 do i := i + 1 end; false) => true
-  | (var i := 0 in while i < 100000 do i := i + 1 end; false) => true
-  | (var i := 0 in while i < 100000 do i := i + 1 end; false) => true
-  | (var i := 0 in while i < 100000 do i := i + 1 end; true) => true
+  | (var i := 0 in while i < 100000000 do i := i + 1 end; false) => true
+  | (var i := 0 in while i < 100000000 do i := i + 1 end; false) => true
+  | (var i := 0 in while i < 100000000 do i := i + 1 end; false) => true
+  | (var i := 0 in while i < 100000000 do i := i + 1 end; false) => true
+  | (var i := 0 in while i < 100000000 do i := i + 1 end; false) => true
+  | (var i := 0 in while i < 100000000 do i := i + 1 end; false) => true
+  | (var i := 0 in while i < 100000000 do i := i + 1 end; false) => true
+  | (var i := 0 in while i < 100000000 do i := i + 1 end; false) => true
+  | (var i := 0 in while i < 100000000 do i := i + 1 end; false) => true
+  | (var i := 0 in while i < 100000000 do i := i + 1 end; false) => true
+  | (var i := 0 in while i < 100000000 do i := i + 1 end; false) => true
+  | (var i := 0 in while i < 100000000 do i := i + 1 end; false) => true
+  | (var i := 0 in while i < 100000000 do i := i + 1 end; true) => false
+  | (var i := 0 in while i < 100000000 do i := i + 1 end; false) => true
+  | (var i := 0 in while i < 100000000 do i := i + 1 end; false) => true
   end
-
-do parallel()

@@ -5,7 +5,7 @@
   (until-clean)
   (into ..))
  (flags -w +a-4-27-29-42-50-70)
- (libraries sedlex gmp menhirLib)
+ (libraries sedlex gmp menhirLib eio_main)
  (preprocess
   (pps sedlex.ppx)))
 
