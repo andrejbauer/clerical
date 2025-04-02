@@ -234,7 +234,12 @@ and comp_case ~pool ~loc ~prec stack cases =
     let loc = b.Location.loc in
     try
         if as_boolean ~loc (comp_ro ~pool ~prec stack b) then raise @@ F.Case_success c else ()
-    with Runtime.NoPrecision ->
+    with
+    | Runtime.NoPrecision ->
+      Fiber.yield ();
+      let prec = Runtime.next_prec ~loc prec in
+      make_thread ~prec (b, c) ()
+    | CamlinternalLazy.Undefined ->
       Fiber.yield ();
       let prec = Runtime.next_prec ~loc prec in
       make_thread ~prec (b, c) ()
