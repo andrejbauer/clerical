@@ -39,11 +39,18 @@ struct
       | [] -> []
       | head :: tail -> (fun () -> task_wrap head) :: make_jobs tail
     in
+    let rec find_one = function
+      | [] -> None
+      | (Case_success e, _) :: _ -> Some e
+      | _ :: tail -> find_one tail
+    in
 
     try
       Fiber.all (make_jobs fibers);
       None
-    with Case_success c -> Some c
+    with
+    | Case_success c -> Some c
+    | Eio.Exn.Multiple e -> find_one e
 
   (** Top-level handler that just restarts any fiber that yields. It does not
       support forking of new fibers. *)
