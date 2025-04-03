@@ -127,8 +127,6 @@ let _main ~pool =
       Print.message ~loc "Runtime error" "%t" (Runtime.print_error err)
 
 let domains = Domain.recommended_domain_count ()
-(* TODO: *)
-(* let domains = 8 *)
 
 let () =
   Eio_main.run @@ fun env ->
