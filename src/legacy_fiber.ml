@@ -31,9 +31,9 @@ struct
   (** Give up without possibility of resumption. *)
   let abort () = raise Abort
 
-  let run_fibers ~pool (fibers : (unit -> unit) list) : R.t option =
+  let run_fibers ~pool ~weight (fibers : (unit -> unit) list) : R.t option =
     let task_wrap task =
-      Eio.Executor_pool.submit_exn pool ~weight:0.0 (fun () -> task ())
+      Eio.Executor_pool.submit_exn pool ~weight (fun () -> task ())
     in
     let rec make_jobs = function
       | [] -> []

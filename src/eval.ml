@@ -100,7 +100,7 @@ end)
 
 (** [comp ~prec n stack c] evaluates computation [c] in the given [stack] at
     precision level [n], and returns the new stack and the computed value. *)
-let rec comp ~pool ~prec stack { Location.data = c; Location.loc } :
+let rec comp ~eio_ctx ~prec stack { Location.data = c; Location.loc } :
     Runtime.stack * Value.result =
   if !Config.trace then print_trace ~loc ~prec stack;
   let { Runtime.prec_mpfr; _ } = prec in
@@ -120,31 +120,31 @@ let rec comp ~pool ~prec stack { Location.data = c; Location.loc } :
       match lookup_fun k stack with
       | None -> Runtime.error ~loc Runtime.InvalidFunction
       | Some f ->
-          let vs = List.map (fun e -> comp_ro_value ~pool ~prec stack e) es in
+          let vs = List.map (fun e -> comp_ro_value ~eio_ctx ~prec stack e) es in
           (stack, f ~loc ~prec vs))
   | Syntax.Skip -> (stack, Value.CNone)
   | Syntax.Trace ->
       print_trace ~loc ~prec stack;
       (stack, Value.CNone)
   | Syntax.Sequence (c1, c2) ->
-      let stack, v1 = comp ~pool ~prec stack c1 in
+      let stack, v1 = comp ~eio_ctx ~prec stack c1 in
       let () = as_unit ~loc:c1.Location.loc v1 in
-      comp ~pool ~prec stack c2
+      comp ~eio_ctx ~prec stack c2
   | Syntax.If (b, c1, c2) -> (
-      let v = comp_ro ~pool ~prec stack b in
+      let v = comp_ro ~eio_ctx ~prec stack b in
       match as_boolean ~loc:b.Location.loc v with
-      | true -> comp ~pool ~prec stack c1
-      | false -> comp ~pool ~prec stack c2)
-  | Syntax.Case cases -> comp_case ~pool ~loc ~prec stack cases
+      | true -> comp ~eio_ctx ~prec stack c1
+      | false -> comp ~eio_ctx ~prec stack c2)
+  | Syntax.Case cases -> comp_case ~eio_ctx ~loc ~prec stack cases
   | Syntax.While (b, c) ->
       let granularity = 1000 in
       let rec loop k stack =
         if k = 0 then Fiber.yield ();
-        let v = comp_ro ~pool ~prec stack b in
+        let v = comp_ro ~eio_ctx ~prec stack b in
         match as_boolean ~loc:b.Location.loc v with
         | false -> (stack, Value.CNone)
         | true ->
-            let stack, v = comp ~pool ~prec stack c in
+            let stack, v = comp ~eio_ctx ~prec stack c in
             let () = as_unit ~loc:c.Location.loc v in
             loop ((k + 1) mod granularity) stack
       in
@@ -153,29 +153,29 @@ let rec comp ~pool ~prec stack { Location.data = c; Location.loc } :
       let rec fold stack' = function
         | [] -> stack'
         | (x, e) :: lst ->
-            let v = comp_ro_value ~pool ~prec stack e in
+            let v = comp_ro_value ~eio_ctx ~prec stack e in
             let stack' = push_rw x v stack' in
             fold stack' lst
       in
       let stack = fold stack lst in
-      let stack, v = comp ~pool ~prec stack c in
+      let stack, v = comp ~eio_ctx ~prec stack c in
       (pop stack (List.length lst), v)
   | Syntax.Let (lst, c) ->
       let rec fold stack' = function
         | [] -> stack'
         | (x, e) :: lst ->
-            let v = comp_ro_value ~pool ~prec stack e in
+            let v = comp_ro_value ~eio_ctx ~prec stack e in
             let stack' = push_ro x v stack' in
             fold stack' lst
       in
       let stack = fold stack lst in
-      let stack, v = comp ~pool ~prec stack c in
+      let stack, v = comp ~eio_ctx ~prec stack c in
       (pop stack (List.length lst), v)
   | Syntax.Assign (k, e) -> (
       match lookup_ref k stack with
       | None -> Runtime.error ~loc Runtime.CannotWrite
       | Some r -> (
-          let v = comp_ro ~pool ~prec stack e in
+          let v = comp_ro ~eio_ctx ~prec stack e in
           match Value.computation_as_value v with
           | None -> Runtime.error ~loc Runtime.ValueExpected
           | Some v ->
@@ -189,7 +189,7 @@ let rec comp ~pool ~prec stack { Location.data = c; Location.loc } :
      *)
       let try_lim n =
         let stack' = push_ro x (Value.VInteger (Mpzf.of_int n)) stack in
-        let v = comp_ro ~pool ~prec stack' e in
+        let v = comp_ro ~eio_ctx ~prec stack' e in
         match Value.computation_as_real v with
         | None -> Runtime.error ~loc:e.Location.loc Runtime.RealExpected
         | Some r ->
@@ -222,18 +222,19 @@ let rec comp ~pool ~prec stack { Location.data = c; Location.loc } :
         let poorest = try_lim 1 in
         loop 1 poorest)
 
-and comp_ro ~pool ~prec stack c : Value.result =
-  snd (comp ~pool ~prec (make_ro stack) c)
+and comp_ro ~eio_ctx ~prec stack c : Value.result =
+  snd (comp ~eio_ctx ~prec (make_ro stack) c)
 
-and comp_ro_value ~pool ~prec stack c =
-  as_value ~loc:c.Location.loc (comp_ro ~pool ~prec stack c)
+and comp_ro_value ~eio_ctx ~prec stack c =
+  as_value ~loc:c.Location.loc (comp_ro ~eio_ctx ~prec stack c)
 
 (* Evaluate a case statement using parallel threads. *)
-and comp_case ~pool ~loc ~prec stack cases =
+and comp_case ~eio_ctx ~loc ~prec stack cases =
+  let (pool, weight) = eio_ctx in
   let rec make_thread ~prec (b, c) () =
     let loc = b.Location.loc in
     try
-        if as_boolean ~loc (comp_ro ~pool ~prec stack b) then raise @@ F.Case_success c else ()
+        if as_boolean ~loc (comp_ro ~eio_ctx ~prec stack b) then raise @@ F.Case_success c else ()
     with
     | Runtime.NoPrecision ->
       Fiber.yield ();
@@ -244,13 +245,14 @@ and comp_case ~pool ~loc ~prec stack cases =
       let prec = Runtime.next_prec ~loc prec in
       make_thread ~prec (b, c) ()
   in
-  let c = match F.run_fibers ~pool (List.map (make_thread ~prec) cases) with
+  let w = weight /. (float_of_int @@ List.length cases) in
+  let c = match F.run_fibers ~pool ~weight (List.map (make_thread ~prec) cases) with
     | Some r -> r;
     | None -> F.abort ()
   in
-  comp ~pool ~prec stack c
+  comp ~eio_ctx:(pool, w) ~prec stack c
 
-let topcomp ~pool ~max_prec stack ({ Location.loc; _ } as c) =
+let topcomp ~eio_ctx ~max_prec stack ({ Location.loc; _ } as c) =
   let require k r =
     let err =
       Dyadic.sub ~prec:12 ~round:Dyadic.up (Real.upper r) (Real.lower r)
@@ -260,7 +262,7 @@ let topcomp ~pool ~max_prec stack ({ Location.loc; _ } as c) =
   in
   let rec loop prec =
     try
-      match comp_ro ~pool ~prec stack c with
+      match comp_ro ~eio_ctx ~prec stack c with
       | Value.CReal r as v ->
           require !Config.out_prec r;
           v
@@ -282,7 +284,7 @@ let toplet_clauses stack lst =
   let rec fold stack' vs = function
     | [] -> (stack', List.rev vs)
     | (x, e, t) :: lst ->
-    (*TODO: pass pool to topcomp if this function (toplet_clauses) is ever needed *)
+    (*TODO: pass eio_ctx to topcomp if this function (toplet_clauses) is ever needed *)
         let v = topcomp ~max_prec:!Config.max_prec stack e in
         let v = as_value ~loc:e.Location.loc v in
         let stack' = push_ro x v stack' in
@@ -292,9 +294,9 @@ let toplet_clauses stack lst =
   fold stack [] lst
 *)
 
-let topfun ~pool stack xs c =
+let topfun ~eio_ctx stack xs c =
   let g ~loc ~prec vs =
-    try comp_ro ~pool ~prec (push_ros xs vs stack) c
+    try comp_ro ~eio_ctx ~prec (push_ros xs vs stack) c
     with Runtime.Error { Location.data = err; loc = loc' } ->
       raise
         (Runtime.Error
@@ -315,10 +317,10 @@ let topexternal ~loc stack s =
       in
       push_fun h stack
 
-let rec toplevel ~pool ~quiet runtime { Location.data = c; Location.loc } =
+let rec toplevel ~eio_ctx ~quiet runtime { Location.data = c; Location.loc } =
   match c with
   | Syntax.TyTopDo (c, t) ->
-      let v = topcomp ~pool ~max_prec:!Config.max_prec runtime c in
+      let v = topcomp ~eio_ctx ~max_prec:!Config.max_prec runtime c in
       (if not quiet then
          match t with
          | Type.Command -> ()
@@ -327,7 +329,7 @@ let rec toplevel ~pool ~quiet runtime { Location.data = c; Location.loc } =
                (Type.print_valty dt));
       runtime
   | Syntax.TyTopFunction (f, xts, c, t) ->
-      let runtime = topfun ~pool runtime (List.map fst xts) c in
+      let runtime = topfun ~eio_ctx runtime (List.map fst xts) c in
       if not quiet then
         Format.printf "function %s : %t@." f
           (Type.print_funty (List.map snd xts, t));
@@ -337,14 +339,14 @@ let rec toplevel ~pool ~quiet runtime { Location.data = c; Location.loc } =
       if not quiet then
         Format.printf "external %s : %t@." f (Type.print_funty ft);
       runtime
-  | Syntax.TyTopFile cmds -> topfile ~pool ~quiet runtime cmds
+  | Syntax.TyTopFile cmds -> topfile ~eio_ctx ~quiet runtime cmds
   | Syntax.TyTopPrecision p ->
       Config.out_prec := p;
       if not quiet then Format.printf "Output precision set to %d@." p;
       runtime
 
-and topfile ~pool ~quiet runtime = function
+and topfile ~eio_ctx ~quiet runtime = function
   | [] -> runtime
   | cmd :: cmds ->
-      let runtime = toplevel ~pool ~quiet runtime cmd in
-      topfile ~pool ~quiet runtime cmds
+      let runtime = toplevel ~eio_ctx ~quiet runtime cmd in
+      topfile ~eio_ctx ~quiet runtime cmds
