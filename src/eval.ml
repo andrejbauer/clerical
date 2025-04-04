@@ -240,10 +240,6 @@ and comp_case ~eio_ctx ~loc ~prec stack cases =
       Fiber.yield ();
       let prec = Runtime.next_prec ~loc prec in
       make_thread ~prec (b, c) ()
-    | CamlinternalLazy.Undefined ->
-      Fiber.yield ();
-      let prec = Runtime.next_prec ~loc prec in
-      make_thread ~prec (b, c) ()
   in
   let w = weight /. (float_of_int @@ List.length cases) in
   let c = match F.run_fibers ~pool ~weight (List.map (make_thread ~prec) cases) with

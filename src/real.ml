@@ -4,6 +4,7 @@
    should be smaller than [u], i.e., the library also works with back-to-front intervals.
    It uses Kaucher multiplication for back-to-front intervals. Infinity and negative
    infinity are allowed as endpoints. *)
+open Eio.Std
 
 let down = Dyadic.down
 let up = Dyadic.up
@@ -11,18 +12,18 @@ let up = Dyadic.up
 let anti = Dyadic.anti
 
 (** An interval is a record with fields [lower] and [upper]. *)
-type t = { lower : Dyadic.t Lazy.t; upper : Dyadic.t Lazy.t }
+type t = { lower : Dyadic.t; upper : Dyadic.t}
 
 (** Basic mainpulation *)
 
 (** [make l u] constructs an interal from two given dyadics. *)
-let make l u = { lower = Lazy.from_val l; upper = Lazy.from_val u }
+let make l u = { lower = l; upper = u }
 
-(** [lower i] computes the lower endpoint. *)
-let lower i = Lazy.force_val i.lower
+(** [lower i] returns the lower endpoint. *)
+let lower i = i.lower
 
-(** [upper i] computes the upper endpoint. *)
-let upper i = Lazy.force_val i.upper
+(** [upper i] returns the upper endpoint. *)
+let upper i = i.upper
 
 (** [flip i] exchanges the lower and upper endpoints. *)
 let flip i = { lower = i.upper; upper = i.lower }
@@ -63,18 +64,18 @@ let to_string i =
 
 let add ~prec ~round i j =
   let dnuor = Dyadic.anti round in
-  { lower = lazy (Dyadic.add ~prec ~round (lower i) (lower j)) ;
-    upper = lazy (Dyadic.add ~prec ~round:dnuor  (upper i) (upper j)) }
+  { lower =  (Dyadic.add ~prec ~round (lower i) (lower j)) ;
+    upper =  (Dyadic.add ~prec ~round:dnuor  (upper i) (upper j)) }
 
 let sub ~prec ~round i j =
   let dnuor = Dyadic.anti round in
-  { lower = lazy (Dyadic.sub ~prec ~round (lower i) (upper j)) ;
-    upper = lazy (Dyadic.sub ~prec ~round:dnuor (upper i) (lower j)) }
+  { lower =  (Dyadic.sub ~prec ~round (lower i) (upper j)) ;
+    upper =  (Dyadic.sub ~prec ~round:dnuor (upper i) (lower j)) }
 
 let neg ~prec ~round i =
   let dnuor = Dyadic.anti round in
-  { lower = lazy (Dyadic.neg ~prec ~round (upper i)) ;
-    upper = lazy (Dyadic.neg ~prec ~round:dnuor (lower i)) }
+  { lower =  (Dyadic.neg ~prec ~round (upper i)) ;
+    upper =  (Dyadic.neg ~prec ~round:dnuor (lower i)) }
 
 (** Kaucher multiplication of intervals is given by the following table.
 
@@ -95,7 +96,7 @@ let neg ~prec ~round i =
 
 let mul ~prec ~round i j =
   let negative = Dyadic.negative in
-  { lower = lazy (
+  { lower = (
 	        let lmul = Dyadic.mul ~prec ~round in
 	        let a = lower i in
 	        let b = upper i in
@@ -117,7 +118,7 @@ let mul ~prec ~round i j =
 		      if negative d then Dyadic.max (lmul a c) (lmul b d) else lmul a c
 	          else (** positive [b] *)
 		    if negative c then lmul b c else lmul a c) ;
-    upper = lazy (
+    upper = (
 	        let umul = Dyadic.mul ~prec ~round:(Dyadic.anti round) in
 	        let a = lower i in
 	        let b = upper i in
@@ -146,12 +147,12 @@ let mul ~prec ~round i j =
 let pow ~prec ~round i k =
   let dnuor = Dyadic.anti round in
   if k mod 2 = 1 then
-    { lower = lazy (Dyadic.pow ~prec ~round:round (lower i) k) ;
-      upper = lazy (Dyadic.pow ~prec ~round:dnuor (upper i) k) }
+    { lower = (Dyadic.pow ~prec ~round:round (lower i) k) ;
+      upper = (Dyadic.pow ~prec ~round:dnuor (upper i) k) }
   else
     let a = lower i in
     let b = upper i in
-    { lower = lazy (
+    { lower = (
 	          let lpow = Dyadic.pow ~prec ~round in
 		  if Dyadic.negative a then
 		    if Dyadic.negative b then
@@ -164,7 +165,7 @@ let pow ~prec ~round i k =
 		    else (** non-negative [b] *)
 		      lpow a k
 	        ) ;
-      upper = lazy (
+      upper = (
 	          let upow = Dyadic.pow ~prec ~round in
 		  if Dyadic.negative a then
 		    if Dyadic.negative b then
@@ -182,7 +183,7 @@ let pow ~prec ~round i k =
 let inv ~prec ~round i =
   let a = lower i in
   let b = upper i in
-  { lower = lazy (
+  { lower = (
 	        let linv = Dyadic.inv ~prec ~round in
 	        match Dyadic.sgn a, Dyadic.sgn b with
 	        | `negative, `negative -> linv b
@@ -195,7 +196,7 @@ let inv ~prec ~round i =
 	        | `zero, `positive -> Dyadic.negative_infinity
 	        | `positive, `positive -> linv b
 	      ) ;
-    upper = lazy (
+    upper = (
 	        let uinv = Dyadic.inv ~prec ~round:(Dyadic.anti round) in
 	        match Dyadic.sgn a, Dyadic.sgn b with
 	        | `negative, `negative -> uinv a
@@ -251,7 +252,7 @@ let midpoint ~prec k i =
 (** Split an interval into two smaller ones. *)
 
 let split ~prec k i =
-  let m = lazy (midpoint ~prec k i) in
+  let m = (midpoint ~prec k i) in
   ({ lower = i.lower;  upper = m }, { lower = m; upper = i.upper })
 
 (** [thirds prec i] computes points [m1] and [m2] which divide [i] into three roughly
