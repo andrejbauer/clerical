@@ -263,17 +263,15 @@ let topcomp ~eio_ctx ~max_prec stack ({ Location.loc; _ } as c) =
           require !Config.out_prec r;
           v
       | (Value.CNone | Value.CBoolean _ | Value.CInteger _) as v -> v
-    with
-    | Runtime.NoPrecision ->
-        if !Config.verbose then
-          Print.message ~loc "Runtime" "Loss of precision at %t"
-            (Runtime.print_prec prec);
-        let prec = Runtime.next_prec ~loc prec in
-        loop prec
-    | F.Abort -> Runtime.(error ~loc InvalidCase)
+    with Runtime.NoPrecision ->
+      if !Config.verbose then
+        Print.message ~loc "Runtime" "Loss of precision at %t"
+          (Runtime.print_prec prec);
+      let prec = Runtime.next_prec ~loc prec in
+      loop prec
   in
   (* Install a handler that reactivates all Yields and Resigns *)
-  Effect.Deep.match_with loop (Runtime.initial_prec ()) F.defibrillator
+  loop (Runtime.initial_prec ())
 
 (*
 let toplet_clauses stack lst =
