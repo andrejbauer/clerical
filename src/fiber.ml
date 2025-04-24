@@ -6,8 +6,6 @@ struct
   open Effect.Deep
   open Eio.Std
 
-  exception Case_success of R.t
-
   type fiber = (unit, R.t) continuation
 
   (** A fiber may fork a new fiber, yield or abort. *)
@@ -32,7 +30,7 @@ struct
   (** Give up without possibility of resumption. *)
   let abort () = raise Abort
 
-  let run_fibers ~pool ~weight (fibers : (unit -> unit) list) : R.t option =
+  let run_fibers ~pool ~weight (fibers : (unit -> R.t) list) : R.t =
     let task_wrap task =
       Eio.Executor_pool.submit_exn pool ~weight (fun () -> task ())
     in
@@ -40,18 +38,7 @@ struct
       | [] -> []
       | head :: tail -> (fun () -> task_wrap head) :: make_jobs tail
     in
-    let rec find_one = function
-      | [] -> None
-      | (Case_success e, _) :: _ -> Some e
-      | _ :: tail -> find_one tail
-    in
-
-    try
-      Fiber.all (make_jobs fibers);
-      None
-    with
-    | Case_success c -> Some c
-    | Eio.Exn.Multiple e -> find_one e
+    Fiber.any (make_jobs fibers);;
 
   (** Top-level handler that just restarts any fiber that yields. It does not
       support forking of new fibers. *)

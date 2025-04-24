@@ -133,4 +133,4 @@ let () =
   Eio_main.run @@ fun env ->
   Switch.run @@ fun sw ->
   let dm = Eio.Stdenv.domain_mgr env in
-  _main ~eio_ctx:(Eio.Executor_pool.create ~sw ~domain_count:domains dm, 1.0)
+  _main ~eio_ctx:(Eio.Executor_pool.create ~sw ~domain_count:domains dm, 0.0)

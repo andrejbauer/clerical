@@ -234,9 +234,8 @@ and comp_case ~eio_ctx ~loc ~prec stack cases =
   let rec make_thread ~prec (b, c) () =
     let loc = b.Location.loc in
     try
-      if as_boolean ~loc (comp_ro ~eio_ctx ~prec stack b) then
-        raise @@ F.Case_success c
-      else ()
+      if as_boolean ~loc (comp_ro ~eio_ctx ~prec stack b) then c
+      else F.cancel ()
     with Runtime.NoPrecision ->
       F.yield ();
       let prec = Runtime.next_prec ~loc prec in
@@ -245,8 +244,7 @@ and comp_case ~eio_ctx ~loc ~prec stack cases =
   let w = weight /. (float_of_int @@ List.length cases) in
   let c =
     match F.run_fibers ~pool ~weight (List.map (make_thread ~prec) cases) with
-    | Some r -> r
-    | None -> F.abort ()
+    | r -> r
   in
   comp ~eio_ctx:(pool, w) ~prec stack c
 
