@@ -26,8 +26,9 @@ struct
 
   (** Yield due to precision loss or spent loop fuel. Upon resumption, either
       restart with better precision, or resume with more fuel. *)
-  let yield () = Effect.perform Yield
+  let yield () = Fiber.yield ()
 
+  let cancel () = Fiber.await_cancel ()
   (** Give up without possibility of resumption. *)
   let abort () = raise Abort
 

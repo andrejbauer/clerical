@@ -1,4 +1,3 @@
-  open Eio.Std
 (** Make the stack read-only by pushing a new empty top frame onto it. *)
 let make_ro Runtime.{ frame; frames; funs } =
   Runtime.{ frame = []; frames = frame :: frames; funs }
@@ -14,7 +13,6 @@ let push_fun f stack = Runtime.{ stack with funs = f :: stack.funs }
 
 (** Push many read-only values *)
 let push_ros xs vs st = List.fold_left2 (fun st x v -> push_ro x v st) st xs vs
-
 
 (** Pop values from stack *)
 let pop stack k =
@@ -94,7 +92,7 @@ let as_value ~loc v =
   | Some v -> v
 
 (** Support for fibers *)
-module F = Legacy_fiber.Make (struct
+module F = Fiber.Make (struct
   type t = Syntax.comp
 end)
 
@@ -120,7 +118,9 @@ let rec comp ~eio_ctx ~prec stack { Location.data = c; Location.loc } :
       match lookup_fun k stack with
       | None -> Runtime.error ~loc Runtime.InvalidFunction
       | Some f ->
-          let vs = List.map (fun e -> comp_ro_value ~eio_ctx ~prec stack e) es in
+          let vs =
+            List.map (fun e -> comp_ro_value ~eio_ctx ~prec stack e) es
+          in
           (stack, f ~loc ~prec vs))
   | Syntax.Skip -> (stack, Value.CNone)
   | Syntax.Trace ->
@@ -139,7 +139,7 @@ let rec comp ~eio_ctx ~prec stack { Location.data = c; Location.loc } :
   | Syntax.While (b, c) ->
       let granularity = 1000 in
       let rec loop k stack =
-        if k = 0 then Fiber.yield ();
+        if k = 0 then F.yield ();
         let v = comp_ro ~eio_ctx ~prec stack b in
         match as_boolean ~loc:b.Location.loc v with
         | false -> (stack, Value.CNone)
@@ -230,20 +230,22 @@ and comp_ro_value ~eio_ctx ~prec stack c =
 
 (* Evaluate a case statement using parallel threads. *)
 and comp_case ~eio_ctx ~loc ~prec stack cases =
-  let (pool, weight) = eio_ctx in
+  let pool, weight = eio_ctx in
   let rec make_thread ~prec (b, c) () =
     let loc = b.Location.loc in
     try
-        if as_boolean ~loc (comp_ro ~eio_ctx ~prec stack b) then raise @@ F.Case_success c else ()
-    with
-    | Runtime.NoPrecision ->
-      Fiber.yield ();
+      if as_boolean ~loc (comp_ro ~eio_ctx ~prec stack b) then
+        raise @@ F.Case_success c
+      else ()
+    with Runtime.NoPrecision ->
+      F.yield ();
       let prec = Runtime.next_prec ~loc prec in
       make_thread ~prec (b, c) ()
   in
   let w = weight /. (float_of_int @@ List.length cases) in
-  let c = match F.run_fibers ~pool ~weight (List.map (make_thread ~prec) cases) with
-    | Some r -> r;
+  let c =
+    match F.run_fibers ~pool ~weight (List.map (make_thread ~prec) cases) with
+    | Some r -> r
     | None -> F.abort ()
   in
   comp ~eio_ctx:(pool, w) ~prec stack c
