@@ -13,6 +13,9 @@ struct
   let yield () = Eio.Fiber.yield ()
 
   let cancel () = Eio.Fiber.await_cancel ()
+  let semaphore () = Eio.Semaphore.make 0
+  let get_value sem = Eio.Semaphore.get_value sem
+  let release sem = Eio.Semaphore.release sem
 
   let run_fibers ~pool ~weight (fibers : (unit -> R.t) list) : R.t =
     let task_wrap task =
