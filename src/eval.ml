@@ -96,6 +96,17 @@ module F = Fiber.Make (struct
   type t = Syntax.comp
 end)
 
+(** Check the values in the list*)
+let rec check_cancel lst =
+  match lst with
+  | head :: tail -> if F.get_value head > 0 then true else check_cancel tail
+  | [] -> false
+
+let rec sem_arr_2_str lst =
+  match lst with
+  | head :: tail -> string_of_int (F.get_value head) ^ " " ^ sem_arr_2_str tail
+  | [] -> ""
+
 (** [comp ~prec n stack c] evaluates computation [c] in the given [stack] at
     precision level [n], and returns the new stack and the computed value. *)
 let rec comp ~eio_ctx ~prec stack { Location.data = c; Location.loc } :
@@ -140,8 +151,16 @@ let rec comp ~eio_ctx ~prec stack { Location.data = c; Location.loc } :
       let granularity = 1000 in
       let rec loop k stack =
         (if k = 0 then
-           let _, _, semaphore = eio_ctx in
-           if F.get_value semaphore > 0 then F.cancel () else F.yield ());
+           let _, _, semaphores, depth = eio_ctx in
+           if check_cancel semaphores then (
+             let head, tail =
+               match semaphores with
+               | head :: tail -> (head, tail)
+               | [] -> (F.semaphore (), [])
+             in
+             F.release head;
+             F.cancel ())
+           else F.yield ());
         let v = comp_ro ~eio_ctx ~prec stack b in
         match as_boolean ~loc:b.Location.loc v with
         | false -> (stack, Value.CNone)
@@ -232,14 +251,17 @@ and comp_ro_value ~eio_ctx ~prec stack c =
 
 (* Evaluate a case statement using parallel threads. *)
 and comp_case ~eio_ctx ~loc ~prec stack cases =
-  let pool, weight, top_semaphore = eio_ctx in
+  (*TODO:(dqnk) depth unnecessary?*)
+  let pool, weight, semaphores, depth = eio_ctx in
   let semaphore = F.semaphore () in
   let rec make_thread ~prec (b, c) () =
     let loc = b.Location.loc in
     try
       if
         as_boolean ~loc
-          (comp_ro ~eio_ctx:(pool, weight, semaphore) ~prec stack b)
+          (comp_ro
+             ~eio_ctx:(pool, weight, semaphore :: semaphores, depth + 1)
+             ~prec stack b)
       then (
         F.release semaphore;
         c)
@@ -251,7 +273,9 @@ and comp_case ~eio_ctx ~loc ~prec stack cases =
   in
   let adjusted_weight = weight /. (float_of_int @@ List.length cases) in
   let c = F.run_fibers ~pool ~weight (List.map (make_thread ~prec) cases) in
-  comp ~eio_ctx:(pool, adjusted_weight, top_semaphore) ~prec stack c
+  (*TODO:(dqnk) is this release necessary? *)
+  F.release semaphore;
+  comp ~eio_ctx:(pool, adjusted_weight, semaphores, depth) ~prec stack c
 
 let topcomp ~eio_ctx ~max_prec stack ({ Location.loc; _ } as c) =
   let require k r =

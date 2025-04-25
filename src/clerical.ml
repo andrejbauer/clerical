@@ -137,4 +137,5 @@ let () =
     ~eio_ctx:
       ( Eio.Executor_pool.create ~sw ~domain_count:domains dm,
         0.0,
-        Eio.Semaphore.make 0 )
+        [ Eio.Semaphore.make 0 ],
+        0 )
