@@ -1,4 +1,5 @@
 exception Error of (Location.t * string * string)
+
 (** Exception [Error (loc, err, msg)] indicates an error of type [err] with
     error message [msg], occurring at location [loc]. *)
 

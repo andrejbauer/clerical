@@ -1,4 +1,4 @@
-(* Concrete syntax *)
+open Util
 
 type operator = string
 type valty = TBoolean | TInteger | TReal

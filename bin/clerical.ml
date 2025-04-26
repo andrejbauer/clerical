@@ -1,5 +1,7 @@
-open Eio.Std
 (** Clerial main program *)
+open Util
+
+module Config = Runtime.Config
 
 (** The usage message. *)
 let usage = "Usage: clerical [option] ... [file] ..."
@@ -28,7 +30,7 @@ let options =
       ( "-v",
         Arg.Unit
           (fun () ->
-            Format.printf "Andromeda %s (%s)@." Build.version Sys.os_type;
+            Format.printf "Clerical (%s)@." Sys.os_type;
             exit 0),
         " Print version information and exit" );
       ( "-n",
@@ -56,22 +58,22 @@ let options =
 
 (** Interactive toplevel *)
 let interactive_shell ~eio_ctx state =
-  Format.printf "Clerical %s@." Build.version;
+  Format.printf "Clerical@.";
 
   let rec loop state =
     let state =
-      try Toplevel.exec_interactive ~eio_ctx state with
-      | Ulexbuf.Error { Location.data = err; Location.loc } ->
-          Print.message ~loc "Syntax error" "%t" (Ulexbuf.print_error err);
+      try Runtime.Toplevel.exec_interactive ~eio_ctx state with
+      | Parsing.Ulexbuf.Error { Location.data = err; Location.loc } ->
+          Print.message ~loc "Syntax error" "%t" (Parsing.Ulexbuf.print_error err);
           state
-      | Desugar.Error { Location.data = err; Location.loc } ->
-          Print.message ~loc "Syntax error" "%t" (Desugar.print_error err);
+      | Typing.Desugar.Error { Location.data = err; Location.loc } ->
+          Print.message ~loc "Syntax error" "%t" (Typing.Desugar.print_error err);
           state
-      | Typecheck.Error { Location.data = err; Location.loc } ->
-          Print.message ~loc "Type error" "%t" (Typecheck.print_error err);
+      | Typing.Typecheck.Error { Location.data = err; Location.loc } ->
+          Print.message ~loc "Type error" "%t" (Typing.Typecheck.print_error err);
           state
-      | Runtime.Error { Location.data = err; Location.loc } ->
-          Print.message ~loc "Runtime error" "%t" (Runtime.print_error err);
+      | Runtime.Run.Error { Location.data = err; Location.loc } ->
+          Print.message ~loc "Runtime error" "%t" (Runtime.Run.print_error err);
           state
       | Sys.Break ->
           Print.message ~loc:Location.Nowhere "Runtime" "interrupted";
@@ -111,27 +113,27 @@ let _main ~eio_ctx =
     let topstate =
       List.fold_left
         (fun topstate (fn, quiet) ->
-          Toplevel.load_file ~eio_ctx ~quiet topstate fn)
-        Toplevel.initial !files
+          Runtime.Toplevel.load_file ~eio_ctx ~quiet topstate fn)
+        Runtime.Toplevel.initial !files
     in
 
     if !Config.interactive_shell then interactive_shell ~eio_ctx topstate
     else ()
   with
-  | Ulexbuf.Error { Location.data = err; Location.loc } ->
-      Print.message ~loc "Syntax error" "%t" (Ulexbuf.print_error err)
-  | Desugar.Error { Location.data = err; Location.loc } ->
-      Print.message ~loc "Syntax error" "%t" (Desugar.print_error err)
-  | Typecheck.Error { Location.data = err; Location.loc } ->
-      Print.message ~loc "Type error" "%t" (Typecheck.print_error err)
-  | Runtime.Error { Location.data = err; Location.loc } ->
-      Print.message ~loc "Runtime error" "%t" (Runtime.print_error err)
+  | Parsing.Ulexbuf.Error { Location.data = err; Location.loc } ->
+      Print.message ~loc "Syntax error" "%t" (Parsing.Ulexbuf.print_error err)
+  | Typing.Desugar.Error { Location.data = err; Location.loc } ->
+      Print.message ~loc "Syntax error" "%t" (Typing.Desugar.print_error err)
+  | Typing.Typecheck.Error { Location.data = err; Location.loc } ->
+      Print.message ~loc "Type error" "%t" (Typing.Typecheck.print_error err)
+  | Runtime.Run.Error { Location.data = err; Location.loc } ->
+      Print.message ~loc "Runtime error" "%t" (Runtime.Run.print_error err)
 
 let domains = Domain.recommended_domain_count ()
 
 let () =
   Eio_main.run @@ fun env ->
-  Switch.run @@ fun sw ->
+  Eio.Std.Switch.run @@ fun sw ->
   let dm = Eio.Stdenv.domain_mgr env in
   _main
     ~eio_ctx:

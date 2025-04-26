@@ -3,8 +3,6 @@ module Make (R : sig
   type t
 end) =
 struct
-  open Effect.Deep
-
   (** Lipstick *)
   let return x = x
 

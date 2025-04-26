@@ -1,15 +1,22 @@
+open Util
+
+module Syntax = Typing.Syntax
+module Type = Typing.Type
+module Dyadic = Reals.Dyadic
+module Real = Reals.Real
+
 (** Make the stack read-only by pushing a new empty top frame onto it. *)
-let make_ro Runtime.{ frame; frames; funs } =
-  Runtime.{ frame = []; frames = frame :: frames; funs }
+let make_ro Run.{ frame; frames; funs } =
+  Run.{ frame = []; frames = frame :: frames; funs }
 
 (** Push a read-write value onto the top frame. *)
-let push_rw x v st = Runtime.{ st with frame = (x, RW (ref v)) :: st.frame }
+let push_rw x v st = Run.{ st with frame = (x, RW (ref v)) :: st.frame }
 
 (** Push a read-only value onto the top frame. *)
-let push_ro x v st = Runtime.{ st with frame = (x, RO v) :: st.frame }
+let push_ro x v st = Run.{ st with frame = (x, RO v) :: st.frame }
 
 (** Define a new function. *)
-let push_fun f stack = Runtime.{ stack with funs = f :: stack.funs }
+let push_fun f stack = Run.{ stack with funs = f :: stack.funs }
 
 (** Push many read-only values *)
 let push_ros xs vs st = List.fold_left2 (fun st x v -> push_ro x v st) st xs vs
@@ -20,16 +27,16 @@ let pop stack k =
     match (k, lst) with
     | 0, lst -> lst
     | k, _ :: lst -> remove (k - 1) lst
-    | _, [] -> Runtime.error ~loc:Location.nowhere (Runtime.InternalError "pop")
+    | _, [] -> Run.error ~loc:Location.nowhere (Run.InternalError "pop")
   in
-  Runtime.{ stack with frame = remove k stack.frame }
+  Run.{ stack with frame = remove k stack.frame }
 
 (** Lookup a value on the stack *)
-let lookup_val k Runtime.{ frame; frames; _ } =
+let lookup_val k Run.{ frame; frames; _ } =
   let rec lookup k vs vss =
     match (k, vs, vss) with
-    | 0, (_, Runtime.RO v) :: _, _ -> Some v
-    | 0, (_, Runtime.RW r) :: _, _ -> Some !r
+    | 0, (_, Run.RO v) :: _, _ -> Some v
+    | 0, (_, Run.RW r) :: _, _ -> Some !r
     | k, [], vs :: vss -> lookup k vs vss
     | k, [], [] -> None
     | k, _ :: vs, vss -> lookup (k - 1) vs vss
@@ -37,18 +44,18 @@ let lookup_val k Runtime.{ frame; frames; _ } =
   lookup k frame frames
 
 (** Lookup a reference to a read-write value on the stack *)
-let lookup_ref k Runtime.{ frame; _ } =
+let lookup_ref k Run.{ frame; _ } =
   let rec lookup k vs =
     match (k, vs) with
-    | 0, (_, Runtime.RO v) :: _ -> None
-    | 0, (_, Runtime.RW r) :: _ -> Some r
+    | 0, (_, Run.RO v) :: _ -> None
+    | 0, (_, Run.RW r) :: _ -> Some r
     | k, [] -> None
     | k, _ :: vs -> lookup (k - 1) vs
   in
   lookup k frame
 
 (** Lookup a function definition *)
-let lookup_fun k Runtime.{ funs; _ } =
+let lookup_fun k Run.{ funs; _ } =
   let rec lookup k fs =
     match (k, fs) with
     | _, [] -> None
@@ -58,14 +65,14 @@ let lookup_fun k Runtime.{ funs; _ } =
   lookup k funs
 
 (** Print trace *)
-let print_trace ~loc ~prec Runtime.{ frame; frames; _ } =
+let print_trace ~loc ~prec Run.{ frame; frames; _ } =
   let xvs = frame @ List.flatten frames in
   Print.message ~loc "Trace" "\tprecision: %t@\n\t%t@."
-    (Runtime.print_prec prec) (fun ppf ->
+    (Run.print_prec prec) (fun ppf ->
       Format.pp_print_list
         ~pp_sep:(fun ppf () -> Format.fprintf ppf "@\n\t")
         (fun ppf (x, entry) ->
-          let v = match entry with Runtime.RO v -> v | Runtime.RW r -> !r in
+          let v = match entry with Run.RO v -> v | Run.RW r -> !r in
           Format.fprintf ppf "%s:\t%t" x (Value.print_value v))
         ppf xvs)
 
@@ -73,27 +80,27 @@ let print_trace ~loc ~prec Runtime.{ frame; frames; _ } =
 
 let as_integer ~loc v =
   match Value.computation_as_integer v with
-  | None -> Runtime.error ~loc Runtime.IntegerExpected
+  | None -> Run.error ~loc Run.IntegerExpected
   | Some k -> k
 
 let as_boolean ~loc v =
   match Value.computation_as_boolean v with
-  | None -> Runtime.error ~loc Runtime.BooleanExpected
+  | None -> Run.error ~loc Run.BooleanExpected
   | Some b -> b
 
 let as_unit ~loc v =
   match Value.computation_as_unit v with
-  | None -> Runtime.error ~loc Runtime.UnitExpected
+  | None -> Run.error ~loc Run.UnitExpected
   | Some () -> ()
 
 let as_value ~loc v =
   match Value.computation_as_value v with
-  | None -> Runtime.error ~loc Runtime.ValueExpected
+  | None -> Run.error ~loc Run.ValueExpected
   | Some v -> v
 
 (** Support for fibers *)
 module F = Fiber.Make (struct
-  type t = Syntax.comp
+  type t = Typing.Syntax.comp
 end)
 
 (** Check the values in the list*)
@@ -110,13 +117,13 @@ let rec sem_arr_2_str lst =
 (** [comp ~prec n stack c] evaluates computation [c] in the given [stack] at
     precision level [n], and returns the new stack and the computed value. *)
 let rec comp ~eio_ctx ~prec stack { Location.data = c; Location.loc } :
-    Runtime.stack * Value.result =
+    Run.stack * Value.result =
   if !Config.trace then print_trace ~loc ~prec stack;
-  let { Runtime.prec_mpfr; _ } = prec in
+  let { Run.prec_mpfr; _ } = prec in
   match c with
   | Syntax.Var k -> (
       match lookup_val k stack with
-      | None -> Runtime.error ~loc Runtime.OutOfStack
+      | None -> Run.error ~loc Run.OutOfStack
       | Some v -> (stack, Value.return v))
   | Syntax.Boolean b -> (stack, Value.CBoolean b)
   | Syntax.Integer k -> (stack, Value.CInteger k)
@@ -127,7 +134,7 @@ let rec comp ~eio_ctx ~prec stack { Location.data = c; Location.loc } :
       (stack, Value.CReal r)
   | Syntax.Apply (k, es) -> (
       match lookup_fun k stack with
-      | None -> Runtime.error ~loc Runtime.InvalidFunction
+      | None -> Run.error ~loc Run.InvalidFunction
       | Some f ->
           let vs =
             List.map (fun e -> comp_ro_value ~eio_ctx ~prec stack e) es
@@ -194,11 +201,11 @@ let rec comp ~eio_ctx ~prec stack { Location.data = c; Location.loc } :
       (pop stack (List.length lst), v)
   | Syntax.Assign (k, e) -> (
       match lookup_ref k stack with
-      | None -> Runtime.error ~loc Runtime.CannotWrite
+      | None -> Run.error ~loc Run.CannotWrite
       | Some r -> (
           let v = comp_ro ~eio_ctx ~prec stack e in
           match Value.computation_as_value v with
-          | None -> Runtime.error ~loc Runtime.ValueExpected
+          | None -> Run.error ~loc Run.ValueExpected
           | Some v ->
               r := v;
               (stack, Value.CNone)))
@@ -212,7 +219,7 @@ let rec comp ~eio_ctx ~prec stack { Location.data = c; Location.loc } :
         let stack' = push_ro x (Value.VInteger (Mpzf.of_int n)) stack in
         let v = comp_ro ~eio_ctx ~prec stack' e in
         match Value.computation_as_real v with
-        | None -> Runtime.error ~loc:e.Location.loc Runtime.RealExpected
+        | None -> Run.error ~loc:e.Location.loc Run.RealExpected
         | Some r ->
             let err =
               Dyadic.shift ~prec:prec_mpfr ~round:Dyadic.up Dyadic.one (-n)
@@ -231,14 +238,14 @@ let rec comp ~eio_ctx ~prec stack { Location.data = c; Location.loc } :
       with
       (* If current precision fails, then successively try n = 1, 2, 4, ... up to mpfr_prec, until we fail.
         We return the last result that succeeded. This strategy was inspired by iRRAM. *)
-      | Runtime.NoPrecision ->
+      | Run.NoPrecision ->
         let rec loop n previous_result =
           try
             if n >= prec_mpfr then previous_result
             else
               let current_result = try_lim (2 * n) in
               loop (2 * n) current_result
-          with Runtime.NoPrecision -> previous_result
+          with Run.NoPrecision -> previous_result
         in
         let poorest = try_lim 1 in
         loop 1 poorest)
@@ -266,9 +273,9 @@ and comp_case ~eio_ctx ~loc ~prec stack cases =
         F.release semaphore;
         c)
       else F.cancel ()
-    with Runtime.NoPrecision ->
+    with Run.NoPrecision ->
       F.yield ();
-      let prec = Runtime.next_prec ~loc prec in
+      let prec = Run.next_prec ~loc prec in
       make_thread ~prec (b, c) ()
   in
   let adjusted_weight = weight /. (float_of_int @@ List.length cases) in
@@ -283,7 +290,7 @@ let topcomp ~eio_ctx ~max_prec stack ({ Location.loc; _ } as c) =
       Dyadic.sub ~prec:12 ~round:Dyadic.up (Real.upper r) (Real.lower r)
     in
     let req = Dyadic.shift ~prec:12 ~round:Dyadic.down Dyadic.one (-k) in
-    if not (Dyadic.lt err req) then raise Runtime.NoPrecision
+    if not (Dyadic.lt err req) then raise Run.NoPrecision
   in
   let rec loop prec =
     try
@@ -292,15 +299,15 @@ let topcomp ~eio_ctx ~max_prec stack ({ Location.loc; _ } as c) =
           require !Config.out_prec r;
           v
       | (Value.CNone | Value.CBoolean _ | Value.CInteger _) as v -> v
-    with Runtime.NoPrecision ->
+    with Run.NoPrecision ->
       if !Config.verbose then
         Print.message ~loc "Runtime" "Loss of precision at %t"
-          (Runtime.print_prec prec);
-      let prec = Runtime.next_prec ~loc prec in
+          (Run.print_prec prec);
+      let prec = Run.next_prec ~loc prec in
       loop prec
   in
   (* Install a handler that reactivates all Yields and Resigns *)
-  loop (Runtime.initial_prec ())
+  loop (Run.initial_prec ())
 
 (*
 let toplet_clauses stack lst =
@@ -320,23 +327,23 @@ let toplet_clauses stack lst =
 let topfun ~eio_ctx stack xs c =
   let g ~loc ~prec vs =
     try comp_ro ~eio_ctx ~prec (push_ros xs vs stack) c
-    with Runtime.Error { Location.data = err; loc = loc' } ->
+    with Run.Error { Location.data = err; loc = loc' } ->
       raise
-        (Runtime.Error
-           (Location.locate ~loc:loc' (Runtime.CallTrace (loc, err))))
+        (Run.Error
+           (Location.locate ~loc:loc' (Run.CallTrace (loc, err))))
   in
   push_fun g stack
 
 let topexternal ~loc stack s =
   match External.lookup s with
-  | None -> Runtime.(error ~loc (UnknownExternal s))
+  | None -> Run.(error ~loc (UnknownExternal s))
   | Some g ->
       let h ~loc ~prec vs =
         try g ~prec vs
-        with Runtime.Error { Location.data = err; loc = loc' } ->
+        with Run.Error { Location.data = err; loc = loc' } ->
           raise
-            (Runtime.Error
-               (Location.locate ~loc:loc' (Runtime.CallTrace (loc, err))))
+            (Run.Error
+               (Location.locate ~loc:loc' (Run.CallTrace (loc, err))))
       in
       push_fun h stack
 

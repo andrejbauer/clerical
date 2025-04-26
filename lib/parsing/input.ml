@@ -1,3 +1,7 @@
+(* Concrete syntax *)
+
+open Util
+
 type operator = string
 type valty = TBoolean | TInteger | TReal
 type cmdty = TData of valty | TCommand

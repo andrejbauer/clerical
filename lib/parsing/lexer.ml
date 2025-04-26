@@ -74,7 +74,7 @@ let update_eoi ({ Ulexbuf.pos_end; line_limit; _ } as lexbuf) =
       if pos_end.Lexing.pos_lnum >= line_limit then
         Ulexbuf.reached_end_of_input lexbuf
 
-let loc_of lex = Location.make lex.Ulexbuf.pos_start lex.Ulexbuf.pos_end
+let loc_of lex = Util.Location.make lex.Ulexbuf.pos_start lex.Ulexbuf.pos_end
 
 let safe_int_of_string lexbuf =
   let s = Ulexbuf.lexeme lexbuf in
@@ -233,7 +233,7 @@ let read_file parse fn =
   with
   (* Any errors when opening or closing a file are fatal. *)
   | Sys_error msg ->
-    raise (Ulexbuf.error ~loc:Location.Nowhere (Ulexbuf.SysError msg))
+    raise (Ulexbuf.error ~loc:Util.Location.Nowhere (Ulexbuf.SysError msg))
 
 let read_toplevel parse () =
   let all_white str =

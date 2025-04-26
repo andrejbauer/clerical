@@ -3,10 +3,10 @@
 %}
 
 (* Infix operations a la OCaml *)
-%token <Name.ident * Location.t> PREFIXOP INFIXOP0 INFIXOP1 INFIXOP2 INFIXOP3 INFIXOP4
+%token <Util.Name.ident * Util.Location.t> PREFIXOP INFIXOP0 INFIXOP1 INFIXOP2 INFIXOP3 INFIXOP4
 
 (* Names and constants *)
-%token <Name.ident> NAME
+%token <Util.Name.ident> NAME
 %token <Mpzf.t> NUMERAL
 %token <string> FLOAT
 %token <bool> BOOLEAN
@@ -44,7 +44,6 @@
 %nonassoc DARROW
 %nonassoc IN
 %right    SEMICOLON
-%nonassoc ELSE
 %left     INFIXOP0
 %right    INFIXOP1
 %left     INFIXOP2
@@ -178,5 +177,5 @@ funty:
 
 mark_location(X):
   x=X
-  { Location.locate ~loc:(Location.make $startpos $endpos) x }
+  { Util.Location.locate ~loc:(Util.Location.make $startpos $endpos) x }
 %%

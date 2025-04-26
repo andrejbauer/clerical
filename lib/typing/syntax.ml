@@ -1,5 +1,7 @@
 (** Abstract syntax. *)
 
+open Util
+
 (* We use de Bruijn indices for variables *)
 type index = int
 type operator = string

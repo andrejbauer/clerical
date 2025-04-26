@@ -1,5 +1,7 @@
 (** Clerical types. *)
 
+open Util
+
 (* Typing context *)
 type entry = RO of Type.valty | RW of Type.valty
 

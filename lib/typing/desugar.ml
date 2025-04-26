@@ -1,6 +1,10 @@
 (** Conversion from concrete syntax to abstract syntax. Here we also load all
     required files, which may not be optimal but is systematic. *)
 
+open Util
+
+module Input = Parsing.Input
+
 (** Conversion errors *)
 type desugar_error = UnknownIdentifier of string | UnknownFunction of string
 
@@ -155,7 +159,7 @@ let rec toplevel ctx { Location.data = c; Location.loc } =
   (ctx, Location.locate ~loc c)
 
 and load ctx fn =
-  let cmds = Lexer.read_file Parser.file fn in
+  let cmds = Parsing.Lexer.read_file Parsing.Parser.file fn in
   let ctx, cmds =
     List.fold_left
       (fun (ctx, cmds) cmd ->

@@ -9,6 +9,8 @@
    definitions.
 *)
 
+open Util
+
 (** Runtime errors *)
 type runtime_error =
   | CallTrace of Location.t * runtime_error
@@ -71,7 +73,7 @@ type precision = { prec_mpfr_min : int; prec_lim_min : int; prec_mpfr : int }
 (** In absence of any knowledge, we scan for each value of [prec_mpfr] all
     values of [prec_lim] up to [prec_mpfr]. *)
 let next_prec ~loc
-    ({ prec_mpfr_min = k0; prec_lim_min = n0; prec_mpfr = k } as prec) =
+    ({ prec_mpfr_min = _k0; prec_lim_min = _n0; prec_mpfr = k } as prec) =
   (* if 2 * n < k then { prec with prec_lim = n + 1} *)
   (* else  *)
   if k >= !Config.max_prec then error ~loc PrecisionLoss

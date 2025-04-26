@@ -1,7 +1,10 @@
+module Desugar = Typing.Desugar
+module Typecheck = Typing.Typecheck
+
 type state = {
   desugar : Desugar.context;
   typecheck : Typecheck.context;
-  runtime : Runtime.stack;
+  runtime : Run.stack;
 }
 (** A toplevel computation carries around the current environment. *)
 
@@ -9,11 +12,11 @@ let initial =
   {
     desugar = Desugar.initial;
     typecheck = Typecheck.initial;
-    runtime = Runtime.initial;
+    runtime = Run.initial;
   }
 
 let exec_interactive ~eio_ctx { desugar; typecheck; runtime } =
-  let cmd = Lexer.read_toplevel Parser.commandline () in
+  let cmd = Parsing.Lexer.read_toplevel Parsing.Parser.commandline () in
   let desugar, cmd = Desugar.toplevel desugar cmd in
   let typecheck, cmd = Typecheck.toplevel typecheck cmd in
   let runtime = Eval.toplevel ~eio_ctx ~quiet:false runtime cmd in

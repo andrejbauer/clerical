@@ -4,7 +4,6 @@
    should be smaller than [u], i.e., the library also works with back-to-front intervals.
    It uses Kaucher multiplication for back-to-front intervals. Infinity and negative
    infinity are allowed as endpoints. *)
-open Eio.Std
 
 let down = Dyadic.down
 let up = Dyadic.up
@@ -105,18 +104,18 @@ let mul ~prec ~round i j =
 	        if negative a then
 	          if negative b then
 		    if negative d then lmul b d else lmul a d
-	          else (** positive [b] *)
+	          else (* positive [b] *)
 		    if negative c then
 		      if negative d then lmul b c else Dyadic.min (lmul a d) (lmul b c)
-		    else (** positive [c] *)
+		    else (* positive [c] *)
 		      if negative d then Dyadic.zero else lmul a d
-	        else (** positive [a] *)
+	        else (* positive [a] *)
 	          if negative b then
 		    if negative c then
 		      if negative d then lmul b d else Dyadic.zero
-		    else (** positive [c] *)
+		    else (* positive [c] *)
 		      if negative d then Dyadic.max (lmul a c) (lmul b d) else lmul a c
-	          else (** positive [b] *)
+	          else (* positive [b] *)
 		    if negative c then lmul b c else lmul a c) ;
     upper = (
 	        let umul = Dyadic.mul ~prec ~round:(Dyadic.anti round) in
@@ -127,18 +126,18 @@ let mul ~prec ~round i j =
 	        if negative a then
 	          if negative b then
 		    if negative c then umul a c else umul b c
-	          else (** positive [b] *)
+	          else (* positive [b] *)
 		    if negative c then
 		      if negative d then umul a c else Dyadic.max (umul a c) (umul b d)
-		    else (** positive [c] *)
+		    else (* positive [c] *)
 		      if negative d then Dyadic.zero else umul b d
-	        else (** positive [a] *)
+	        else (* positive [a] *)
 	          if negative b then
 		    if negative c then
 		      if negative d then umul a d else Dyadic.zero
-		    else (** positive [c] *)
+		    else (* positive [c] *)
 		      if negative d then Dyadic.min (umul a d) (umul b c) else umul b c
-	          else (** positive [b] *)
+	          else (* positive [b] *)
 		    if negative d then umul a d else umul b d)
   }
 
@@ -157,12 +156,12 @@ let pow ~prec ~round i k =
 		  if Dyadic.negative a then
 		    if Dyadic.negative b then
 		      lpow b k
-		    else (** non-negative [b] *)
+		    else (* non-negative [b] *)
 		      Dyadic.zero
-		  else (** non-negative [a] *)
+		  else (* non-negative [a] *)
 		    if Dyadic.negative b then
 		      Dyadic.max (lpow a k) (lpow b k)
-		    else (** non-negative [b] *)
+		    else (* non-negative [b] *)
 		      lpow a k
 	        ) ;
       upper = (
@@ -170,12 +169,12 @@ let pow ~prec ~round i k =
 		  if Dyadic.negative a then
 		    if Dyadic.negative b then
 		      upow a k
-		    else (** non-negative [b] *)
+		    else (* non-negative [b] *)
 		      Dyadic.max (upow a k) (upow b k)
-		  else (** non-negative [a] *)
+		  else (* non-negative [a] *)
 		    if Dyadic.negative b then
 		      Dyadic.zero
-		    else (** non-negative [b] *)
+		    else (* non-negative [b] *)
 		      upow b k
     ) }
 

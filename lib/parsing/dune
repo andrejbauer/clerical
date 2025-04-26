@@ -1,0 +1,10 @@
+(library
+  (name parsing)
+  (libraries sedlex menhirLib gmp util)
+  (flags -w +a-4-27-29-42-50-70)
+  (preprocess (pps sedlex.ppx))
+)
+
+(menhir
+ (modules parser))
+
