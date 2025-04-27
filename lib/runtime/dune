@@ -1,5 +1,5 @@
 (library
   (name runtime)
   (flags -w +a-4-27-29-42-50-70)
-  (libraries eio_main gmp util reals typing)
+  (libraries gmp util reals typing)
 )

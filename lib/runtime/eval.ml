@@ -103,20 +103,9 @@ module F = Fiber.Make (struct
   type t = Typing.Syntax.comp
 end)
 
-(** Check the values in the list*)
-let rec check_cancel lst =
-  match lst with
-  | head :: tail -> if F.get_value head > 0 then true else check_cancel tail
-  | [] -> false
-
-let rec sem_arr_2_str lst =
-  match lst with
-  | head :: tail -> string_of_int (F.get_value head) ^ " " ^ sem_arr_2_str tail
-  | [] -> ""
-
 (** [comp ~prec n stack c] evaluates computation [c] in the given [stack] at
     precision level [n], and returns the new stack and the computed value. *)
-let rec comp ~eio_ctx ~prec stack { Location.data = c; Location.loc } :
+let rec comp ~prec stack { Location.data = c; Location.loc } :
     Run.stack * Value.result =
   if !Config.trace then print_trace ~loc ~prec stack;
   let { Run.prec_mpfr; _ } = prec in
@@ -137,7 +126,7 @@ let rec comp ~eio_ctx ~prec stack { Location.data = c; Location.loc } :
       | None -> Run.error ~loc Run.InvalidFunction
       | Some f ->
           let vs =
-            List.map (fun e -> comp_ro_value ~eio_ctx ~prec stack e) es
+            List.map (fun e -> comp_ro_value ~prec stack e) es
           in
           (stack, f ~loc ~prec vs))
   | Syntax.Skip -> (stack, Value.CNone)
@@ -145,34 +134,24 @@ let rec comp ~eio_ctx ~prec stack { Location.data = c; Location.loc } :
       print_trace ~loc ~prec stack;
       (stack, Value.CNone)
   | Syntax.Sequence (c1, c2) ->
-      let stack, v1 = comp ~eio_ctx ~prec stack c1 in
+      let stack, v1 = comp ~prec stack c1 in
       let () = as_unit ~loc:c1.Location.loc v1 in
-      comp ~eio_ctx ~prec stack c2
+      comp ~prec stack c2
   | Syntax.If (b, c1, c2) -> (
-      let v = comp_ro ~eio_ctx ~prec stack b in
+      let v = comp_ro ~prec stack b in
       match as_boolean ~loc:b.Location.loc v with
-      | true -> comp ~eio_ctx ~prec stack c1
-      | false -> comp ~eio_ctx ~prec stack c2)
-  | Syntax.Case cases -> comp_case ~eio_ctx ~loc ~prec stack cases
+      | true -> comp ~prec stack c1
+      | false -> comp ~prec stack c2)
+  | Syntax.Case cases -> comp_case ~loc ~prec stack cases
   | Syntax.While (b, c) ->
       let granularity = 1000 in
       let rec loop k stack =
-        (if k = 0 then
-           let _, _, semaphores, depth = eio_ctx in
-           if check_cancel semaphores then (
-             let head, tail =
-               match semaphores with
-               | head :: tail -> (head, tail)
-               | [] -> (F.semaphore (), [])
-             in
-             F.release head;
-             F.cancel ())
-           else F.yield ());
-        let v = comp_ro ~eio_ctx ~prec stack b in
+        if k = 0 then F.yield () ;
+        let v = comp_ro ~prec stack b in
         match as_boolean ~loc:b.Location.loc v with
         | false -> (stack, Value.CNone)
         | true ->
-            let stack, v = comp ~eio_ctx ~prec stack c in
+            let stack, v = comp ~prec stack c in
             let () = as_unit ~loc:c.Location.loc v in
             loop ((k + 1) mod granularity) stack
       in
@@ -181,29 +160,29 @@ let rec comp ~eio_ctx ~prec stack { Location.data = c; Location.loc } :
       let rec fold stack' = function
         | [] -> stack'
         | (x, e) :: lst ->
-            let v = comp_ro_value ~eio_ctx ~prec stack e in
+            let v = comp_ro_value ~prec stack e in
             let stack' = push_rw x v stack' in
             fold stack' lst
       in
       let stack = fold stack lst in
-      let stack, v = comp ~eio_ctx ~prec stack c in
+      let stack, v = comp ~prec stack c in
       (pop stack (List.length lst), v)
   | Syntax.Let (lst, c) ->
       let rec fold stack' = function
         | [] -> stack'
         | (x, e) :: lst ->
-            let v = comp_ro_value ~eio_ctx ~prec stack e in
+            let v = comp_ro_value ~prec stack e in
             let stack' = push_ro x v stack' in
             fold stack' lst
       in
       let stack = fold stack lst in
-      let stack, v = comp ~eio_ctx ~prec stack c in
+      let stack, v = comp ~prec stack c in
       (pop stack (List.length lst), v)
   | Syntax.Assign (k, e) -> (
       match lookup_ref k stack with
       | None -> Run.error ~loc Run.CannotWrite
       | Some r -> (
-          let v = comp_ro ~eio_ctx ~prec stack e in
+          let v = comp_ro ~prec stack e in
           match Value.computation_as_value v with
           | None -> Run.error ~loc Run.ValueExpected
           | Some v ->
@@ -217,7 +196,7 @@ let rec comp ~eio_ctx ~prec stack { Location.data = c; Location.loc } :
      *)
       let try_lim n =
         let stack' = push_ro x (Value.VInteger (Mpzf.of_int n)) stack in
-        let v = comp_ro ~eio_ctx ~prec stack' e in
+        let v = comp_ro ~prec stack' e in
         match Value.computation_as_real v with
         | None -> Run.error ~loc:e.Location.loc Run.RealExpected
         | Some r ->
@@ -250,41 +229,27 @@ let rec comp ~eio_ctx ~prec stack { Location.data = c; Location.loc } :
         let poorest = try_lim 1 in
         loop 1 poorest)
 
-and comp_ro ~eio_ctx ~prec stack c : Value.result =
-  snd (comp ~eio_ctx ~prec (make_ro stack) c)
+and comp_ro ~prec stack c : Value.result =
+  snd (comp ~prec (make_ro stack) c)
 
-and comp_ro_value ~eio_ctx ~prec stack c =
-  as_value ~loc:c.Location.loc (comp_ro ~eio_ctx ~prec stack c)
+and comp_ro_value ~prec stack c =
+  as_value ~loc:c.Location.loc (comp_ro ~prec stack c)
 
 (* Evaluate a case statement using parallel threads. *)
-and comp_case ~eio_ctx ~loc ~prec stack cases =
-  (*TODO:(dqnk) depth unnecessary?*)
-  let pool, weight, semaphores, depth = eio_ctx in
-  let semaphore = F.semaphore () in
+and comp_case ~loc ~prec stack cases =
   let rec make_thread ~prec (b, c) () =
     let loc = b.Location.loc in
     try
-      if
-        as_boolean ~loc
-          (comp_ro
-             ~eio_ctx:(pool, weight, semaphore :: semaphores, depth + 1)
-             ~prec stack b)
-      then (
-        F.release semaphore;
-        c)
-      else F.cancel ()
+      if as_boolean ~loc (comp_ro ~prec stack b) then c else F.abort ()
     with Run.NoPrecision ->
       F.yield ();
       let prec = Run.next_prec ~loc prec in
       make_thread ~prec (b, c) ()
   in
-  let adjusted_weight = weight /. (float_of_int @@ List.length cases) in
-  let c = F.run_fibers ~pool ~weight (List.map (make_thread ~prec) cases) in
-  (*TODO:(dqnk) is this release necessary? *)
-  F.release semaphore;
-  comp ~eio_ctx:(pool, adjusted_weight, semaphores, depth) ~prec stack c
+  let c = F.run_fibers (List.map (make_thread ~prec) cases) in
+  comp ~prec stack c
 
-let topcomp ~eio_ctx ~max_prec stack ({ Location.loc; _ } as c) =
+let topcomp ~max_prec stack ({ Location.loc; _ } as c) =
   let require k r =
     let err =
       Dyadic.sub ~prec:12 ~round:Dyadic.up (Real.upper r) (Real.lower r)
@@ -294,7 +259,7 @@ let topcomp ~eio_ctx ~max_prec stack ({ Location.loc; _ } as c) =
   in
   let rec loop prec =
     try
-      match comp_ro ~eio_ctx ~prec stack c with
+      match comp_ro ~prec stack c with
       | Value.CReal r as v ->
           require !Config.out_prec r;
           v
@@ -307,7 +272,7 @@ let topcomp ~eio_ctx ~max_prec stack ({ Location.loc; _ } as c) =
       loop prec
   in
   (* Install a handler that reactivates all Yields and Resigns *)
-  loop (Run.initial_prec ())
+  Effect.Deep.match_with loop (Run.initial_prec ()) F.defibrillator
 
 (*
 let toplet_clauses stack lst =
@@ -324,9 +289,9 @@ let toplet_clauses stack lst =
   fold stack [] lst
 *)
 
-let topfun ~eio_ctx stack xs c =
+let topfun stack xs c =
   let g ~loc ~prec vs =
-    try comp_ro ~eio_ctx ~prec (push_ros xs vs stack) c
+    try comp_ro ~prec (push_ros xs vs stack) c
     with Run.Error { Location.data = err; loc = loc' } ->
       raise
         (Run.Error
@@ -347,10 +312,10 @@ let topexternal ~loc stack s =
       in
       push_fun h stack
 
-let rec toplevel ~eio_ctx ~quiet runtime { Location.data = c; Location.loc } =
+let rec toplevel ~quiet runtime { Location.data = c; Location.loc } =
   match c with
   | Syntax.TyTopDo (c, t) ->
-      let v = topcomp ~eio_ctx ~max_prec:!Config.max_prec runtime c in
+      let v = topcomp ~max_prec:!Config.max_prec runtime c in
       (if not quiet then
          match t with
          | Type.Command -> ()
@@ -359,7 +324,7 @@ let rec toplevel ~eio_ctx ~quiet runtime { Location.data = c; Location.loc } =
                (Type.print_valty dt));
       runtime
   | Syntax.TyTopFunction (f, xts, c, t) ->
-      let runtime = topfun ~eio_ctx runtime (List.map fst xts) c in
+      let runtime = topfun runtime (List.map fst xts) c in
       if not quiet then
         Format.printf "function %s : %t@." f
           (Type.print_funty (List.map snd xts, t));
@@ -369,14 +334,14 @@ let rec toplevel ~eio_ctx ~quiet runtime { Location.data = c; Location.loc } =
       if not quiet then
         Format.printf "external %s : %t@." f (Type.print_funty ft);
       runtime
-  | Syntax.TyTopFile cmds -> topfile ~eio_ctx ~quiet runtime cmds
+  | Syntax.TyTopFile cmds -> topfile ~quiet runtime cmds
   | Syntax.TyTopPrecision p ->
       Config.out_prec := p;
       if not quiet then Format.printf "Output precision set to %d@." p;
       runtime
 
-and topfile ~eio_ctx ~quiet runtime = function
+and topfile ~quiet runtime = function
   | [] -> runtime
   | cmd :: cmds ->
-      let runtime = toplevel ~eio_ctx ~quiet runtime cmd in
-      topfile ~eio_ctx ~quiet runtime cmds
+      let runtime = toplevel ~quiet runtime cmd in
+      topfile ~quiet runtime cmds

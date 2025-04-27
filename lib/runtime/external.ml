@@ -53,7 +53,8 @@ let make_RR s f =
       | [] | _ :: _ :: _ ->
           Run.error ~loc:Location.nowhere (Run.InvalidExternal s) )
 
-let make_III s f =
+(* currently not used, we call it _make_III to silence the OCaml compiler *)
+let _make_III s f =
   ( s,
     fun ~prec -> function
       | [ v ] -> (
