@@ -98,11 +98,6 @@ let as_value ~loc v =
   | None -> Run.error ~loc Run.ValueExpected
   | Some v -> v
 
-(** Support for fibers *)
-module F = Fiber.Make (struct
-  type t = Typing.Syntax.comp
-end)
-
 (** [comp ~prec n stack c] evaluates computation [c] in the given [stack] at
     precision level [n], and returns the new stack and the computed value. *)
 let rec comp ~prec stack { Location.data = c; Location.loc } :
@@ -146,7 +141,7 @@ let rec comp ~prec stack { Location.data = c; Location.loc } :
   | Syntax.While (b, c) ->
       let granularity = 1000 in
       let rec loop k stack =
-        if k = 0 then F.yield () ;
+        if k = 0 then Parallel.yield () ;
         let v = comp_ro ~prec stack b in
         match as_boolean ~loc:b.Location.loc v with
         | false -> (stack, Value.CNone)
@@ -237,16 +232,17 @@ and comp_ro_value ~prec stack c =
 
 (* Evaluate a case statement using parallel threads. *)
 and comp_case ~loc ~prec stack cases =
-  let rec make_thread ~prec (b, c) () =
+  let rec make_guard ~prec b =
     let loc = b.Location.loc in
-    try
-      if as_boolean ~loc (comp_ro ~prec stack b) then c else F.abort ()
-    with Run.NoPrecision ->
-      F.yield ();
-      let prec = Run.next_prec ~loc prec in
-      make_thread ~prec (b, c) ()
+    fun () ->
+      try
+        as_boolean ~loc (comp_ro ~prec stack b)
+      with Run.NoPrecision ->
+        Parallel.yield ();
+        let prec = Run.next_prec ~loc prec in
+        make_guard ~prec b ()
   in
-  let c = F.run_fibers (List.map (make_thread ~prec) cases) in
+  let c = Parallel.run_guards (List.map (fun (b, c) -> (make_guard ~prec b, c)) cases) in
   comp ~prec stack c
 
 let topcomp ~max_prec stack ({ Location.loc; _ } as c) =
@@ -271,23 +267,11 @@ let topcomp ~max_prec stack ({ Location.loc; _ } as c) =
       let prec = Run.next_prec ~loc prec in
       loop prec
   in
-  (* Install a handler that reactivates all Yields and Resigns *)
-  Effect.Deep.match_with loop (Run.initial_prec ()) F.defibrillator
-
-(*
-let toplet_clauses stack lst =
-  let rec fold stack' vs = function
-    | [] -> (stack', List.rev vs)
-    | (x, e, t) :: lst ->
-    (*TODO: pass eio_ctx to topcomp if this function (toplet_clauses) is ever needed *)
-        let v = topcomp ~max_prec:!Config.max_prec stack e in
-        let v = as_value ~loc:e.Location.loc v in
-        let stack' = push_ro x v stack' in
-        let vs = v :: vs in
-        fold stack' vs lst
-  in
-  fold stack [] lst
-*)
+  let prec = Run.initial_prec () in
+  try
+    Parallel.toplevel ?domains:!Config.domains @@ fun () -> loop prec
+  with
+  | Parallel.InvalidCase -> Run.(error ~loc InvalidCase)
 
 let topfun stack xs c =
   let g ~loc ~prec vs =
@@ -314,6 +298,7 @@ let topexternal ~loc stack s =
 
 let rec toplevel ~quiet runtime { Location.data = c; Location.loc } =
   match c with
+
   | Syntax.TyTopDo (c, t) ->
       let v = topcomp ~max_prec:!Config.max_prec runtime c in
       (if not quiet then
@@ -323,22 +308,31 @@ let rec toplevel ~quiet runtime { Location.data = c; Location.loc } =
              Format.printf "%t : %t@." (Value.print_result v)
                (Type.print_valty dt));
       runtime
+
   | Syntax.TyTopFunction (f, xts, c, t) ->
       let runtime = topfun runtime (List.map fst xts) c in
       if not quiet then
         Format.printf "function %s : %t@." f
           (Type.print_funty (List.map snd xts, t));
       runtime
+
   | Syntax.TyTopExternal (f, s, ft) ->
       let runtime = topexternal ~loc runtime s in
       if not quiet then
         Format.printf "external %s : %t@." f (Type.print_funty ft);
       runtime
+
   | Syntax.TyTopFile cmds -> topfile ~quiet runtime cmds
+
   | Syntax.TyTopPrecision p ->
       Config.out_prec := p;
       if not quiet then Format.printf "Output precision set to %d@." p;
       runtime
+
+  | Syntax.TyTopDomains d ->
+    Config.domains := Some d ;
+    if not quiet then Format.printf "Number of domains set to %d@." d;
+    runtime
 
 and topfile ~quiet runtime = function
   | [] -> runtime

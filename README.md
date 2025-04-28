@@ -4,13 +4,14 @@ An implementation of an imperative langauge for exact real number computation.
 
 ## Prerequisites
 
-To compile the OCaml implementation of Clerical and a sufficiently new version of OCaml (version 4.10 or later should work).
+To compile the OCaml implementation of Clerical and a sufficiently new version of OCaml (version 5.20 or later should work).
 You also need the following:
 
 * the [MFPR](http://www.mpfr.org) library
 * the [Dune](https://dune.build) build system
 * the [Menhir](http://gallium.inria.fr/~fpottier/menhir/) OCaml parser generator
-* the Ocaml libraries `menhirLib`, `sedlex` and `mlgmpidl`
+* the Ocaml libraries `menhirLib`, `sedlex`, `mlgmpidl` and `picos`
+
 
 ### OCaml & OPAM
 
@@ -30,13 +31,24 @@ is aviable through various package managers. On MacOS you can install it using
 
 Install OCaml tools and libraries with
 
-    opam install dune
-    opam install menhir
-    opam install sedlex
-    opam install mlgmpidl
+    opam install dune menhir sedlex mlgmpidl
 
-**Note:** At the time of writing (2023-03-12) OPAM does not yet support `mlgmpidl` for OCaml 5, even though the code compiles with OCaml 5. You might have to install it manually from the GitHub repository [`mlgmpidl`](https://github.com/nberth/mlgmpidl) if you are using OCaml 5.
+### Picos library
 
+As of 2025-04-28 we need [Picos](https://github.com/ocaml-multicore/picos) library version 0.6 or later. If you are far enough in the future,
+you can install these with
+
+    opam install picos_std picos_mux
+
+If not, you will have to use the development version from the repository. You get these by pinning them,
+as follows:
+
+    opam pin add picos     git+ssh://git@github.com/ocaml-multicore/picos.git
+    opam pin add picos_aux git+ssh://git@github.com/ocaml-multicore/picos.git
+    opam pin add picos_mux git+ssh://git@github.com/ocaml-multicore/picos.git
+    opam pin add picos_std git+ssh://git@github.com/ocaml-multicore/picos.git
+
+Good luck!
 
 ## Compilation
 

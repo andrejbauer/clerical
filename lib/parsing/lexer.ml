@@ -8,6 +8,7 @@ let reserved =
     ("case", CASE);
     ("command", COMMAND);
     ("do", DO);
+    ("domains", DOMAINS);
     ("else", ELSE);
     ("end", END);
     ("external", EXTERNAL);

@@ -17,5 +17,8 @@ let max_prec = ref 10240
 (** How many output precisions we print for reals. *)
 let out_prec = ref 5
 
+(** How many domains (CPU cores) to run on. If [None], run on all but one. *)
+let domains = ref None
+
 let trace = ref false
 let verbose = ref false

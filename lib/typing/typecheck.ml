@@ -36,6 +36,7 @@ type type_error =
   | InvalidApplication of int * int
   | InvalidAssign
   | ValueExpected
+  | InvalidDomains
 
 exception Error of type_error Location.located
 
@@ -54,6 +55,7 @@ let print_error err ppf =
       Format.fprintf ppf "%d arguments expected but %d given" i j
   | InvalidAssign -> Format.fprintf ppf "cannot write to readonly variable"
   | ValueExpected -> Format.fprintf ppf "expected a value but got a command"
+  | InvalidDomains -> Format.fprintf ppf "the number of domains must be between 1 and 128"
 
 (** Lookup the type of an identifier *)
 let lookup_val k { frame; frames; _ } =
@@ -189,25 +191,30 @@ and newvar_clauses ctx lst =
   fold ctx lst
 
 let rec toplevel ctx { Location.data = tc; loc } =
-  let ctx, tc = toplevel' ctx tc in
-  (ctx, Location.locate ~loc tc)
-
-and toplevel' ctx = function
-  | Syntax.TopDo c ->
+  let ctx, tc =
+    match tc with
+    | Syntax.TopDo c ->
       let t = comp ctx c in
       (ctx, Syntax.TyTopDo (c, t))
-  | Syntax.TopFunction (f, xts, c) ->
+    | Syntax.TopFunction (f, xts, c) ->
       let t = comp (push_args xts ctx) c in
       let ft = (List.map snd xts, t) in
       let ctx = push_fun ft ctx in
       (ctx, Syntax.TyTopFunction (f, xts, c, t))
-  | Syntax.TopExternal (f, s, ft) ->
+    | Syntax.TopExternal (f, s, ft) ->
       let ctx = push_fun ft ctx in
       (ctx, Syntax.TyTopExternal (f, s, ft))
-  | Syntax.TopFile lst ->
+    | Syntax.TopFile lst ->
       let ctx, cmds = topfile ctx lst in
       (ctx, Syntax.TyTopFile cmds)
-  | Syntax.TopPrecision p -> (ctx, Syntax.TyTopPrecision p)
+    | Syntax.TopPrecision p -> (ctx, Syntax.TyTopPrecision p)
+    | Syntax.TopDomains d ->
+      if 1 <= d && d <= 128 then
+        (ctx, Syntax.TyTopDomains d)
+      else
+        error ~loc InvalidDomains
+  in
+  (ctx, Location.locate ~loc tc)
 
 and topfile ctx lst =
   let rec fold ctx lst' = function

@@ -32,3 +32,4 @@ and toplevel' =
   | TopExternal of Name.ident * string * funty
   | TopLoad of string
   | TopPrecision of Mpzf.t
+  | TopDomains of Mpzf.t

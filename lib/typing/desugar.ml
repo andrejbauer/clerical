@@ -154,6 +154,7 @@ let rec toplevel ctx { Location.data = c; Location.loc } =
         let ctx, cmds = load ctx fn in
         (ctx, Syntax.TopFile cmds)
     | Input.TopPrecision p -> (ctx, Syntax.TopPrecision (Mpz.get_int p))
+    | Input.TopDomains d -> (ctx, Syntax.TopDomains (Mpz.get_int d))
   in
   let ctx, c = toplevel' ctx c in
   (ctx, Location.locate ~loc c)

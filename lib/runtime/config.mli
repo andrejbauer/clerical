@@ -9,4 +9,5 @@ val init_prec : int ref
 val max_prec : int ref
 val out_prec : int ref
 val trace : bool ref
+val domains : int option ref
 val verbose : bool ref

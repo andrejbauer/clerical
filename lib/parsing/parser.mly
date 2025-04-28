@@ -36,6 +36,7 @@
 %token FUNCTION EXTERNAL
 %token LOAD
 %token PRECISION
+%token DOMAINS
 
 (* End of input token *)
 %token EOF
@@ -58,7 +59,7 @@
 (* Toplevel syntax *)
 
 file:
-  | f=filecontents EOF            { f }
+  | f=filecontents EOF              { f }
 
 filecontents:
   |                                 { [] }
@@ -77,6 +78,7 @@ plain_topcomp:
   | EXTERNAL f=var_name COLON ft=funty EQ s=QUOTED_STRING   { TopExternal (f, s, ft) }
   | DO c=term                                               { TopDo c }
   | PRECISION p=NUMERAL                                     { TopPrecision p }
+  | DOMAINS d=NUMERAL                                       { TopDomains d }
 
 (* Toplevel directive. *)
 topdirective: mark_location(plain_topdirective)      { $1 }

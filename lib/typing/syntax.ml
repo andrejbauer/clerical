@@ -33,6 +33,7 @@ and toplevel' =
   | TopExternal of Name.ident * string * Type.funty
   | TopFile of toplevel list
   | TopPrecision of int
+  | TopDomains of int
 
 type tytoplevel = tytoplevel' Location.located
 (** Toplevel command annotated with types *)
@@ -44,3 +45,4 @@ and tytoplevel' =
   | TyTopExternal of Name.ident * string * Type.funty
   | TyTopFile of tytoplevel list
   | TyTopPrecision of int
+  | TyTopDomains of int
