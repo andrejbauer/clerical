@@ -1,5 +1,4 @@
 (library
-  (name typing)
-  (flags -w +a-4-27-29-42-50-70)
-  (libraries util parsing gmp)
-)
+ (name typing)
+ (flags -w +a-4-27-29-42-50-70)
+ (libraries util parsing gmp))

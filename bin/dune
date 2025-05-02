@@ -5,5 +5,4 @@
   (until-clean)
   (into ..))
  (flags -w +a-4-27-29-42-50-70)
- (libraries runtime)
-)
+ (libraries runtime))

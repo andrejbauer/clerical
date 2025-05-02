@@ -4,7 +4,11 @@
 type value = VBoolean of bool | VInteger of Mpzf.t | VReal of Reals.Real.t
 
 (** Results of computations *)
-type result = CBoolean of bool | CInteger of Mpzf.t | CReal of Reals.Real.t | CNone
+type result =
+  | CBoolean of bool
+  | CInteger of Mpzf.t
+  | CReal of Reals.Real.t
+  | CNone
 
 (** Embed a value into results *)
 let return = function

@@ -1,5 +1,12 @@
 (library
-  (name runtime)
-  (flags -w +a-4-27-29-42-50-70)
-  (libraries gmp picos picos.domain picos_std.structured picos_mux.multififo util reals typing)
-)
+ (name runtime)
+ (flags -w +a-4-27-29-42-50-70)
+ (libraries
+  gmp
+  picos
+  picos.domain
+  picos_std.structured
+  picos_mux.multififo
+  util
+  reals
+  typing))

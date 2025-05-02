@@ -2,7 +2,6 @@
     required files, which may not be optimal but is systematic. *)
 
 open Util
-
 module Input = Parsing.Input
 
 (** Conversion errors *)

@@ -1,4 +1,3 @@
 (library
-  (name reals)
-  (libraries gmp)
-)
+ (name reals)
+ (libraries gmp))

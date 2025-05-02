@@ -1,5 +1,5 @@
-(** Clerial main program *)
 open Util
+(** Clerial main program *)
 
 module Config = Runtime.Config
 
@@ -18,39 +18,39 @@ let add_file quiet filename = files := (filename, quiet) :: !files
 let options =
   Arg.align
     [
-      ("--columns",
-       Arg.Set_int Config.columns,
-       " Set the maximum number of columns of pretty printing" );
-      ("--no-prelude",
-       Arg.Unit (fun () -> Config.prelude_file := Config.PreludeNone),
-       " Do not load the prelude.m31 file" );
-      ("--prelude",
-       Arg.String (fun str -> Config.prelude_file := Config.PreludeFile str),
-       "<file> Specify the prelude file to load initially" );
-      ("-n",
-       Arg.Clear Config.interactive_shell,
-       " Do not run the interactive toplevel" );
-      ("-l",
-       Arg.String (fun str -> add_file true str),
-       "<file> Load <file> into the initial environment" );
-      ("--init-prec",
-       Arg.Set_int Config.init_prec,
-       "<int> Set initial precision for MFPR" );
-      ("--max-prec",
-       Arg.Set_int Config.max_prec,
-       "<int> Set maximum precision for MPFR" );
-      ("--domains",
-       Arg.Int (fun k -> Config.domains := Some k),
-       "<int> Set number of domains (CPU cores for parallel execution)");
-      ("--out-prec",
-       Arg.Set_int Config.out_prec,
-       "<int> Set precision for printing reals at top level" );
-      ("--trace",
-       Arg.Set Config.trace,
-       " Print trace information during evaluation" );
-      ("--verbose",
-       Arg.Set Config.verbose,
-       " Print information about precision during computation" );
+      ( "--columns",
+        Arg.Set_int Config.columns,
+        " Set the maximum number of columns of pretty printing" );
+      ( "--no-prelude",
+        Arg.Unit (fun () -> Config.prelude_file := Config.PreludeNone),
+        " Do not load the prelude.m31 file" );
+      ( "--prelude",
+        Arg.String (fun str -> Config.prelude_file := Config.PreludeFile str),
+        "<file> Specify the prelude file to load initially" );
+      ( "-n",
+        Arg.Clear Config.interactive_shell,
+        " Do not run the interactive toplevel" );
+      ( "-l",
+        Arg.String (fun str -> add_file true str),
+        "<file> Load <file> into the initial environment" );
+      ( "--init-prec",
+        Arg.Set_int Config.init_prec,
+        "<int> Set initial precision for MFPR" );
+      ( "--max-prec",
+        Arg.Set_int Config.max_prec,
+        "<int> Set maximum precision for MPFR" );
+      ( "--domains",
+        Arg.Int (fun k -> Config.domains := Some k),
+        "<int> Set number of domains (CPU cores for parallel execution)" );
+      ( "--out-prec",
+        Arg.Set_int Config.out_prec,
+        "<int> Set precision for printing reals at top level" );
+      ( "--trace",
+        Arg.Set Config.trace,
+        " Print trace information during evaluation" );
+      ( "--verbose",
+        Arg.Set Config.verbose,
+        " Print information about precision during computation" );
     ]
 
 (** Interactive toplevel *)
@@ -61,13 +61,16 @@ let interactive_shell state =
     let state =
       try Runtime.Toplevel.exec_interactive state with
       | Parsing.Ulexbuf.Error { Location.data = err; Location.loc } ->
-          Print.message ~loc "Syntax error" "%t" (Parsing.Ulexbuf.print_error err);
+          Print.message ~loc "Syntax error" "%t"
+            (Parsing.Ulexbuf.print_error err);
           state
       | Typing.Desugar.Error { Location.data = err; Location.loc } ->
-          Print.message ~loc "Syntax error" "%t" (Typing.Desugar.print_error err);
+          Print.message ~loc "Syntax error" "%t"
+            (Typing.Desugar.print_error err);
           state
       | Typing.Typecheck.Error { Location.data = err; Location.loc } ->
-          Print.message ~loc "Type error" "%t" (Typing.Typecheck.print_error err);
+          Print.message ~loc "Type error" "%t"
+            (Typing.Typecheck.print_error err);
           state
       | Runtime.Run.Error { Location.data = err; Location.loc } ->
           Print.message ~loc "Runtime error" "%t" (Runtime.Run.print_error err);
@@ -114,8 +117,7 @@ let _main =
         Runtime.Toplevel.initial !files
     in
 
-    if !Config.interactive_shell then interactive_shell topstate
-    else ()
+    if !Config.interactive_shell then interactive_shell topstate else ()
   with
   | Parsing.Ulexbuf.Error { Location.data = err; Location.loc } ->
       Print.message ~loc "Syntax error" "%t" (Parsing.Ulexbuf.print_error err)

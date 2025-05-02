@@ -15,8 +15,7 @@ let make_BB s f =
       | [ v ] -> (
           match Value.value_as_boolean v with
           | Some b -> Value.CBoolean (f b)
-          | None ->
-              Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
+          | None -> Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
       | [] | _ :: _ :: _ ->
           Run.error ~loc:Location.nowhere (Run.InvalidExternal s) )
 
@@ -26,8 +25,7 @@ let make_IR s f =
       | [ v ] -> (
           match Value.value_as_integer v with
           | Some k -> Value.CReal (f ~prec k)
-          | None ->
-              Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
+          | None -> Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
       | [] | _ :: _ :: _ ->
           Run.error ~loc:Location.nowhere (Run.InvalidExternal s) )
 
@@ -37,8 +35,7 @@ let make_RI s f =
       | [ v ] -> (
           match Value.value_as_real v with
           | Some r -> Value.CInteger (f ~prec r)
-          | None ->
-              Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
+          | None -> Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
       | [] | _ :: _ :: _ ->
           Run.error ~loc:Location.nowhere (Run.InvalidExternal s) )
 
@@ -48,8 +45,7 @@ let make_RR s f =
       | [ v ] -> (
           match Value.value_as_real v with
           | Some r -> Value.CReal (f ~prec r)
-          | None ->
-              Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
+          | None -> Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
       | [] | _ :: _ :: _ ->
           Run.error ~loc:Location.nowhere (Run.InvalidExternal s) )
 
@@ -60,8 +56,7 @@ let _make_III s f =
       | [ v ] -> (
           match Value.value_as_integer v with
           | Some k -> Value.CReal (f ~prec k)
-          | None ->
-              Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
+          | None -> Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
       | [] | _ :: _ :: _ ->
           Run.error ~loc:Location.nowhere (Run.InvalidExternal s) )
 

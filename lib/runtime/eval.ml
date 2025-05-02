@@ -1,5 +1,4 @@
 open Util
-
 module Syntax = Typing.Syntax
 module Type = Typing.Type
 module Dyadic = Reals.Dyadic
@@ -67,8 +66,8 @@ let lookup_fun k Run.{ funs; _ } =
 (** Print trace *)
 let print_trace ~loc ~prec Run.{ frame; frames; _ } =
   let xvs = frame @ List.flatten frames in
-  Print.message ~loc "Trace" "\tprecision: %t@\n\t%t@."
-    (Run.print_prec prec) (fun ppf ->
+  Print.message ~loc "Trace" "\tprecision: %t@\n\t%t@." (Run.print_prec prec)
+    (fun ppf ->
       Format.pp_print_list
         ~pp_sep:(fun ppf () -> Format.fprintf ppf "@\n\t")
         (fun ppf (x, entry) ->
@@ -120,9 +119,7 @@ let rec comp ~prec stack { Location.data = c; Location.loc } :
       match lookup_fun k stack with
       | None -> Run.error ~loc Run.InvalidFunction
       | Some f ->
-          let vs =
-            List.map (fun e -> comp_ro_value ~prec stack e) es
-          in
+          let vs = List.map (fun e -> comp_ro_value ~prec stack e) es in
           (stack, f ~loc ~prec vs))
   | Syntax.Skip -> (stack, Value.CNone)
   | Syntax.Trace ->
@@ -141,7 +138,7 @@ let rec comp ~prec stack { Location.data = c; Location.loc } :
   | Syntax.While (b, c) ->
       let granularity = 1000 in
       let rec loop k stack =
-        if k = 0 then Parallel.yield () ;
+        if k = 0 then Parallel.yield ();
         let v = comp_ro ~prec stack b in
         match as_boolean ~loc:b.Location.loc v with
         | false -> (stack, Value.CNone)
@@ -224,8 +221,7 @@ let rec comp ~prec stack { Location.data = c; Location.loc } :
         let poorest = try_lim 1 in
         loop 1 poorest)
 
-and comp_ro ~prec stack c : Value.result =
-  snd (comp ~prec (make_ro stack) c)
+and comp_ro ~prec stack c : Value.result = snd (comp ~prec (make_ro stack) c)
 
 and comp_ro_value ~prec stack c =
   as_value ~loc:c.Location.loc (comp_ro ~prec stack c)
@@ -235,14 +231,15 @@ and comp_case ~loc ~prec stack cases =
   let rec make_guard ~prec b =
     let loc = b.Location.loc in
     fun () ->
-      try
-        as_boolean ~loc (comp_ro ~prec stack b)
+      try as_boolean ~loc (comp_ro ~prec stack b)
       with Run.NoPrecision ->
         Parallel.yield ();
         let prec = Run.next_prec ~loc prec in
         make_guard ~prec b ()
   in
-  let c = Parallel.run_guards (List.map (fun (b, c) -> (make_guard ~prec b, c)) cases) in
+  let c =
+    Parallel.run_guards (List.map (fun (b, c) -> (make_guard ~prec b, c)) cases)
+  in
   comp ~prec stack c
 
 let topcomp ~max_prec stack ({ Location.loc; _ } as c) =
@@ -268,18 +265,14 @@ let topcomp ~max_prec stack ({ Location.loc; _ } as c) =
       loop prec
   in
   let prec = Run.initial_prec () in
-  try
-    Parallel.toplevel ?domains:!Config.domains @@ fun () -> loop prec
-  with
-  | Parallel.InvalidCase -> Run.(error ~loc InvalidCase)
+  try Parallel.toplevel ?domains:!Config.domains @@ fun () -> loop prec
+  with Parallel.InvalidCase -> Run.(error ~loc InvalidCase)
 
 let topfun stack xs c =
   let g ~loc ~prec vs =
     try comp_ro ~prec (push_ros xs vs stack) c
     with Run.Error { Location.data = err; loc = loc' } ->
-      raise
-        (Run.Error
-           (Location.locate ~loc:loc' (Run.CallTrace (loc, err))))
+      raise (Run.Error (Location.locate ~loc:loc' (Run.CallTrace (loc, err))))
   in
   push_fun g stack
 
@@ -291,14 +284,12 @@ let topexternal ~loc stack s =
         try g ~prec vs
         with Run.Error { Location.data = err; loc = loc' } ->
           raise
-            (Run.Error
-               (Location.locate ~loc:loc' (Run.CallTrace (loc, err))))
+            (Run.Error (Location.locate ~loc:loc' (Run.CallTrace (loc, err))))
       in
       push_fun h stack
 
 let rec toplevel ~quiet runtime { Location.data = c; Location.loc } =
   match c with
-
   | Syntax.TyTopDo (c, t) ->
       let v = topcomp ~max_prec:!Config.max_prec runtime c in
       (if not quiet then
@@ -308,31 +299,26 @@ let rec toplevel ~quiet runtime { Location.data = c; Location.loc } =
              Format.printf "%t : %t@." (Value.print_result v)
                (Type.print_valty dt));
       runtime
-
   | Syntax.TyTopFunction (f, xts, c, t) ->
       let runtime = topfun runtime (List.map fst xts) c in
       if not quiet then
         Format.printf "function %s : %t@." f
           (Type.print_funty (List.map snd xts, t));
       runtime
-
   | Syntax.TyTopExternal (f, s, ft) ->
       let runtime = topexternal ~loc runtime s in
       if not quiet then
         Format.printf "external %s : %t@." f (Type.print_funty ft);
       runtime
-
   | Syntax.TyTopFile cmds -> topfile ~quiet runtime cmds
-
   | Syntax.TyTopPrecision p ->
       Config.out_prec := p;
       if not quiet then Format.printf "Output precision set to %d@." p;
       runtime
-
   | Syntax.TyTopDomains d ->
-    Config.domains := Some d ;
-    if not quiet then Format.printf "Number of domains set to %d@." d;
-    runtime
+      Config.domains := Some d;
+      if not quiet then Format.printf "Number of domains set to %d@." d;
+      runtime
 
 and topfile ~quiet runtime = function
   | [] -> runtime
