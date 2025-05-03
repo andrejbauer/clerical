@@ -7,6 +7,8 @@ exception InvalidCase
     restart with better precision, or resume with more fuel. *)
 let yield = Picos_std_structured.Control.yield
 
+let await = Picos_std_structured.Promise.await
+
 (** Run guards in parallel and return the result of the first one that succeeds.
 *)
 let run_guards guards =
@@ -25,3 +27,9 @@ let toplevel ?domains task =
   in
   try Picos_mux_multififo.run_on ~n_domains @@ task
   with Picos_std_structured.Control.Terminate -> raise InvalidCase
+
+let all expressions compute =
+  Picos_std_structured.Bundle.join_after @@ fun bundle ->
+  List.map
+    (Picos_std_structured.Bundle.fork_as_promise bundle)
+    (List.map (fun (x, e) () -> (x, compute e)) expressions)

@@ -149,25 +149,27 @@ let rec comp ~prec stack { Location.data = c; Location.loc } :
       in
       loop 1 stack
   | Syntax.Newvar (lst, c) ->
+      let vals = Parallel.all lst (comp_ro_value ~prec stack) in
       let rec fold stack' = function
         | [] -> stack'
-        | (x, e) :: lst ->
-            let v = comp_ro_value ~prec stack e in
+        | p :: lst ->
+            let x, v = Parallel.await p in
             let stack' = push_rw x v stack' in
             fold stack' lst
       in
-      let stack = fold stack lst in
+      let stack = fold stack vals in
       let stack, v = comp ~prec stack c in
       (pop stack (List.length lst), v)
   | Syntax.Let (lst, c) ->
+      let vals = Parallel.all lst (comp_ro_value ~prec stack) in
       let rec fold stack' = function
         | [] -> stack'
-        | (x, e) :: lst ->
-            let v = comp_ro_value ~prec stack e in
+        | p :: lst ->
+            let x, v = Parallel.await p in
             let stack' = push_ro x v stack' in
             fold stack' lst
       in
-      let stack = fold stack lst in
+      let stack = fold stack vals in
       let stack, v = comp ~prec stack c in
       (pop stack (List.length lst), v)
   | Syntax.Assign (k, e) -> (
