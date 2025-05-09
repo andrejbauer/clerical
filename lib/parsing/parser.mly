@@ -19,8 +19,7 @@
 %token BAR DARROW
 
 (* Datatypes & types *)
-%token BOOL INT REAL
-%token COMMAND
+%token BOOL INT REAL UNIT
 
 (* Commands *)
 %token BEGIN END
@@ -168,13 +167,10 @@ datatype:
   | BOOL { TBoolean }
   | INT  { TInteger }
   | REAL { TReal }
-
-cmdty:
-  | dt=datatype { TData dt }
-  | COMMAND     { TCommand }
+  | UNIT { TUnit }
 
 funty:
-  | LPAREN dts=separated_list(COMMA, datatype) RPAREN ARROW t=cmdty
+  | LPAREN dts=separated_list(COMMA, datatype) RPAREN ARROW t=datatype
     { (dts, t) }
 
 mark_location(X):

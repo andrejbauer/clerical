@@ -6,7 +6,6 @@ let reserved =
     ("begin", BEGIN);
     ("bool", BOOL);
     ("case", CASE);
-    ("command", COMMAND);
     ("do", DO);
     ("domains", DOMAINS);
     ("else", ELSE);
@@ -26,6 +25,7 @@ let reserved =
     ("then", THEN);
     ("trace", TRACE);
     ("true", BOOLEAN true);
+    ("unit", UNIT);
     ("var", VAR);
     ("while", WHILE);
   ]

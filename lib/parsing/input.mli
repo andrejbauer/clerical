@@ -1,9 +1,10 @@
 open Util
 
 type operator = string
-type valty = TBoolean | TInteger | TReal
-type cmdty = TData of valty | TCommand
-type funty = valty list * cmdty
+
+type ty = TBoolean | TInteger | TReal | TUnit
+
+type funty = ty list * ty
 
 type comp = comp' Location.located
 
@@ -28,7 +29,7 @@ type toplevel = toplevel' Location.located
 
 and toplevel' =
   | TopDo of comp
-  | TopFunction of Name.ident * (Name.ident * valty) list * comp
+  | TopFunction of Name.ident * (Name.ident * ty) list * comp
   | TopExternal of Name.ident * string * funty
   | TopLoad of string
   | TopPrecision of Mpzf.t

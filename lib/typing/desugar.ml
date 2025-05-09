@@ -55,11 +55,12 @@ let valty = function
   | Input.TBoolean -> Type.Boolean
   | Input.TInteger -> Type.Integer
   | Input.TReal -> Type.Real
+  | Input.TUnit -> Type.Unit
 
 (** Desugar a computation type *)
-let cmpty = function
-  | Input.TData dt -> Type.Data (valty dt)
-  | Input.TCommand -> Type.Command
+let cmpty t =
+  let dt = valty t in
+  Type.Cmd dt
 
 (** Desugar a function type *)
 let funty (dts, t) = (List.map valty dts, cmpty t)

@@ -32,7 +32,7 @@ let push_args xts ctx =
 (** Type errors *)
 type type_error =
   | InternalError of string
-  | TypeMismatch of Type.cmdty * Type.cmdty
+  | TypeMismatch of Type.valty * Type.valty
   | InvalidApplication of int * int
   | InvalidAssign
   | ValueExpected
@@ -49,8 +49,8 @@ let print_error err ppf =
   | InternalError s -> Format.fprintf ppf "internal error %s, please report" s
   | TypeMismatch (t_expected, t_actual) ->
       Format.fprintf ppf "expected %t but found %t"
-        (Type.print_cmdty t_expected)
-        (Type.print_cmdty t_actual)
+        (Type.print_valty t_expected)
+        (Type.print_valty t_actual)
   | InvalidApplication (i, j) ->
       Format.fprintf ppf "%d arguments expected but %d given" i j
   | InvalidAssign -> Format.fprintf ppf "cannot write to readonly variable"
@@ -97,18 +97,18 @@ let lookup_fun j { funs; _ } =
 
 let rec comp ctx { Location.data = c; loc } =
   match c with
-  | Syntax.Var k -> Type.Data (lookup_val k ctx)
-  | Syntax.Boolean _ -> Type.Data Type.Boolean
-  | Syntax.Integer _ -> Type.Data Type.Integer
-  | Syntax.Float _ -> Type.Data Type.Real
+  | Syntax.Var k -> Type.Cmd (lookup_val k ctx)
+  | Syntax.Boolean _ -> Type.(Cmd Boolean)
+  | Syntax.Integer _ -> Type.(Cmd Integer)
+  | Syntax.Float _ -> Type.(Cmd Real)
   | Syntax.Apply (k, args) ->
       let t_args, t_ret = lookup_fun k ctx in
       check_args ~loc ctx t_args args;
       t_ret
-  | Syntax.Skip -> Type.Command
-  | Syntax.Trace -> Type.Command
+  | Syntax.Skip -> Type.(Cmd Unit)
+  | Syntax.Trace -> Type.(Cmd Unit)
   | Syntax.Sequence (c1, c2) ->
-      check_comp ctx Type.Command c1;
+      check_comp ctx Type.(Cmd Unit) c1;
       comp ctx c2
   | Syntax.Case [] -> error ~loc (InternalError "Typecheck.comp")
   | Syntax.Case ((b, c) :: lst) ->
@@ -129,8 +129,8 @@ let rec comp ctx { Location.data = c; loc } =
       t
   | Syntax.While (b, c) ->
       check_expr ctx Type.Boolean b;
-      check_comp ctx Type.Command c;
-      Type.Command
+      check_comp ctx Type.(Cmd Unit) c;
+      Type.(Cmd Unit)
   | Syntax.Let (lst, c) ->
       let ctx = let_clauses ctx lst in
       comp ctx c
@@ -142,22 +142,21 @@ let rec comp ctx { Location.data = c; loc } =
       | None -> error ~loc InvalidAssign
       | Some dt ->
           check_expr ctx dt e;
-          Type.Command)
+          Type.(Cmd Unit))
   | Syntax.Lim (_, e) ->
       let ctx = push_ro Type.Integer ctx in
       check_expr ctx Type.Real e;
-      Type.Data Type.Real
+      Type.Cmd Type.Real
 
 and expr ctx c =
-  match comp (make_ro ctx) c with
-  | Type.Data dt -> dt
-  | Type.Command -> error ~loc:c.Location.loc ValueExpected
+  let Type.Cmd dt = comp (make_ro ctx) c in
+  dt
 
-and check_comp ctx t c =
-  let t' = comp ctx c in
+and check_comp ctx (Type.Cmd t) c =
+  let Type.Cmd t' = comp ctx c in
   if t <> t' then error ~loc:c.Location.loc (TypeMismatch (t, t'))
 
-and check_expr ctx dt c = check_comp ctx (Type.Data dt) c
+and check_expr ctx dt c = check_comp ctx (Type.Cmd dt) c
 
 and check_args ~loc ctx dts cs =
   let rec fold dts' cs' =
