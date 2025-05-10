@@ -8,7 +8,7 @@ type value =
   | VUnit
 
 (** Result of a read-only computation *)
-type result_ro = RO of value
+type result_ro = RO of value Parallel.promise
 
 (** Result of a read-write computation *)
 type result = RW of value
@@ -17,7 +17,7 @@ type result = RW of value
 let return v = RW v
 
 (** Embed a value into a read-only computation *)
-let return_ro v = RO v
+let return_ro v = RO (Parallel.as_promise v)
 
 (** Extract an integers from a value *)
 let value_as_integer = function
@@ -39,6 +39,7 @@ let value_as_unit = function
   | VUnit -> Some ()
   | VBoolean _ | VInteger _ | VReal _ -> None
 
+(*
 (** Extract a boolean from a read-only computation *)
 let ro_as_boolean (RO v) = value_as_boolean v
 
@@ -50,13 +51,14 @@ let ro_as_real (RO v) = value_as_real v
 
 (** Extract an unit from a read-only computation *)
 let ro_as_unit (RO v) = value_as_unit v
+*)
 
 (** Extract a value from a read-only computation *)
 let ro_as_value (RO v) = v
 
-(** Convert the result of a read-only computation to the result of
-    a read-write computation.*)
-let ro_as_rw (RO v) = RW v
+(** Convert the result of a read-only computation to the result of a read-write
+    computation.*)
+(*let ro_as_rw (RO v) = RW v*)
 
 (** Print a value *)
 let print_value v ppf =

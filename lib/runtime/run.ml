@@ -87,7 +87,12 @@ type stack = {
   frame : (Name.ident * entry) list; (* read-write *)
   frames : (Name.ident * entry) list list; (* read-only *)
   funs :
-    (loc:Location.t -> prec:precision -> Value.value list -> Value.result_ro) list;
+    (loc:Location.t ->
+    prec:precision ->
+    Value.value list ->
+    Picos_std_structured.Bundle.t ->
+    Value.result_ro)
+    list;
 }
 (** The top frame is the one that we can write into, all the other frames are
     read-only. *)
