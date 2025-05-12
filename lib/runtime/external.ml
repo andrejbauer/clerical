@@ -3,7 +3,7 @@
 open Util
 open Reals
 
-type entry = prec:Run.precision -> Value.value list -> Value.result_ro
+type entry = prec:Run.precision -> Value.value list -> Value.value
 
 (** Helper functions for making external functions. The suffix X..ZT means that
     the inputs are of types X, ..., Z and the ouyput of type T, where I stands
@@ -14,7 +14,7 @@ let make_BB s f =
     fun ~prec -> function
       | [ v ] -> (
           match Value.value_as_boolean v with
-          | Some b -> Value.(return_ro (VBoolean (f b)))
+          | Some b -> Value.(VBoolean (f b))
           | None -> Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
       | [] | _ :: _ :: _ ->
           Run.error ~loc:Location.nowhere (Run.InvalidExternal s) )
@@ -24,7 +24,7 @@ let make_IR s f =
     fun ~prec -> function
       | [ v ] -> (
           match Value.value_as_integer v with
-          | Some k -> Value.(return_ro (VReal (f ~prec k)))
+          | Some k -> Value.(VReal (f ~prec k))
           | None -> Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
       | [] | _ :: _ :: _ ->
           Run.error ~loc:Location.nowhere (Run.InvalidExternal s) )
@@ -34,7 +34,7 @@ let make_RI s f =
     fun ~prec -> function
       | [ v ] -> (
           match Value.value_as_real v with
-          | Some r -> Value.(return_ro (VInteger (f ~prec r)))
+          | Some r -> Value.(VInteger (f ~prec r))
           | None -> Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
       | [] | _ :: _ :: _ ->
           Run.error ~loc:Location.nowhere (Run.InvalidExternal s) )
@@ -44,7 +44,7 @@ let make_RR s f =
     fun ~prec -> function
       | [ v ] -> (
           match Value.value_as_real v with
-          | Some r -> Value.(return_ro (VReal (f ~prec r)))
+          | Some r -> Value.(VReal (f ~prec r))
           | None -> Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
       | [] | _ :: _ :: _ ->
           Run.error ~loc:Location.nowhere (Run.InvalidExternal s) )
@@ -55,7 +55,7 @@ let _make_III s f =
     fun ~prec -> function
       | [ v ] -> (
           match Value.value_as_integer v with
-          | Some k -> Value.(return_ro (VReal (f ~prec k)))
+          | Some k -> Value.(VReal (f ~prec k))
           | None -> Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
       | [] | _ :: _ :: _ ->
           Run.error ~loc:Location.nowhere (Run.InvalidExternal s) )
@@ -65,7 +65,7 @@ let make_III s f =
     fun ~prec -> function
       | [ v1; v2 ] -> (
           match (Value.value_as_integer v1, Value.value_as_integer v2) with
-          | Some k1, Some k2 -> Value.(return_ro (VInteger (f k1 k2)))
+          | Some k1, Some k2 -> Value.(VInteger (f k1 k2))
           | None, _ | _, None ->
               Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
       | [] | [ _ ] | _ :: _ :: _ ->
@@ -76,7 +76,7 @@ let make_IIB s f =
     fun ~prec -> function
       | [ v1; v2 ] -> (
           match (Value.value_as_integer v1, Value.value_as_integer v2) with
-          | Some k1, Some k2 -> Value.(return_ro (VBoolean (f k1 k2)))
+          | Some k1, Some k2 -> Value.(VBoolean (f k1 k2))
           | None, _ | _, None ->
               Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
       | [] | [ _ ] | _ :: _ :: _ ->
@@ -87,7 +87,7 @@ let make_RRR s f =
     fun ~prec -> function
       | [ v1; v2 ] -> (
           match (Value.value_as_real v1, Value.value_as_real v2) with
-          | Some r1, Some r2 -> Value.(return_ro (VReal (f ~prec r1 r2)))
+          | Some r1, Some r2 -> Value.(VReal (f ~prec r1 r2))
           | None, _ | _, None ->
               Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
       | [] | [ _ ] | _ :: _ :: _ ->
@@ -98,7 +98,7 @@ let make_RRB s f =
     fun ~prec -> function
       | [ v1; v2 ] -> (
           match (Value.value_as_real v1, Value.value_as_real v2) with
-          | Some r1, Some r2 -> Value.(return_ro (VBoolean (f ~prec r1 r2)))
+          | Some r1, Some r2 -> Value.(VBoolean (f ~prec r1 r2))
           | None, _ | _, None ->
               Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
       | [] | [ _ ] | _ :: _ :: _ ->
@@ -109,7 +109,7 @@ let make_BBB s f =
     fun ~prec -> function
       | [ v1; v2 ] -> (
           match (Value.value_as_boolean v1, Value.value_as_boolean v2) with
-          | Some b1, Some b2 -> Value.(return_ro (VBoolean (f b1 b2)))
+          | Some b1, Some b2 -> Value.(VBoolean (f b1 b2))
           | None, _ | _, None ->
               Run.error ~loc:Location.nowhere (Run.InvalidExternal s))
       | [] | [ _ ] | _ :: _ :: _ ->
