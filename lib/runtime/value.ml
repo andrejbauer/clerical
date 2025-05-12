@@ -7,17 +7,8 @@ type value =
   | VReal of Reals.Real.t
   | VUnit
 
-(** Result of a read-only computation *)
-type result_ro = RO of value Parallel.promise
-
-(** Result of a read-write computation *)
-type result = RW of value
-
-(** Embed a value into a read-write computation *)
-let return v = RW v
-
-(** Embed a value into a read-only computation *)
-let return_ro v = RO (Parallel.as_promise v)
+(** A value that is being computed in paralell. *)
+type value_promise = value Parallel.promise
 
 (** Extract an integers from a value *)
 let value_as_integer = function
@@ -39,26 +30,10 @@ let value_as_unit = function
   | VUnit -> Some ()
   | VBoolean _ | VInteger _ | VReal _ -> None
 
-(*
-(** Extract a boolean from a read-only computation *)
-let ro_as_boolean (RO v) = value_as_boolean v
-
-(** Extract an integer from a read-only computation *)
-let ro_as_integer (RO v) = value_as_integer v
-
-(** Extract an integer from a read-only computation *)
-let ro_as_real (RO v) = value_as_real v
-
-(** Extract an unit from a read-only computation *)
-let ro_as_unit (RO v) = value_as_unit v
-*)
-
-(** Extract a value from a read-only computation *)
-let ro_as_value (RO v) = v
-
-(** Convert the result of a read-only computation to the result of a read-write
-    computation.*)
-(*let ro_as_rw (RO v) = RW v*)
+(** [awaiting f p] awaits the promise [p] to obtain a value, then applies [f] to the value *)
+let awaiting f p =
+  let v = Parallel.await p in
+  f v
 
 (** Print a value *)
 let print_value v ppf =
@@ -69,4 +44,4 @@ let print_value v ppf =
   | VUnit -> Format.fprintf ppf "()"
 
 (** Print the result of a read-write computation *)
-let print_result (RW v) ppf = print_value v ppf
+let print_value v ppf = print_value v ppf

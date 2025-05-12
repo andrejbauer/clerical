@@ -59,8 +59,8 @@ let rec print_error err ppf =
 
 (** A stack entry *)
 type entry =
-  | RO of Value.value  (** read-only stack value *)
-  | RW of Value.value ref  (** read-write stack value *)
+  | RO of Value.value_promise      (** read-only stack value *)
+  | RW of Value.value_promise ref  (** read-write stack value *)
 
 type precision = { prec_mpfr_min : int; prec_lim_min : int; prec_mpfr : int }
 (** Precision describes at what precision we run MPFR (the field [prec_mpfr])
@@ -87,11 +87,11 @@ type stack = {
   frame : (Name.ident * entry) list; (* read-write *)
   frames : (Name.ident * entry) list list; (* read-only *)
   funs :
-    (loc:Location.t ->
+    (bundle:Picos_std_structured.Bundle.t ->
+    loc:Location.t ->
     prec:precision ->
-    Value.value list ->
-    Picos_std_structured.Bundle.t ->
-    Value.result_ro)
+    Value.value_promise list ->
+    Value.value)
     list;
 }
 (** The top frame is the one that we can write into, all the other frames are
