@@ -23,6 +23,7 @@ let reserved =
     ("real", REAL);
     ("precision", PRECISION);
     ("skip", SKIP);
+    ("time", TIME);
     ("then", THEN);
     ("trace", TRACE);
     ("true", BOOLEAN true);

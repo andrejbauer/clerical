@@ -163,6 +163,9 @@ let rec toplevel ctx { Location.data = c; Location.loc } =
     | Input.TopDo c ->
         let c = comp ctx c in
         (ctx, Syntax.TopDo c)
+    | Input.TopTime c ->
+        let c = comp ctx c in
+        (ctx, Syntax.TopTime c)
     | Input.TopFunction (f, xts, c) ->
         let c = comp (add_args xts ctx) c
         and xts = List.map (fun (x, t) -> (x, valty t)) xts in

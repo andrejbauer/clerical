@@ -31,6 +31,7 @@ type toplevel = toplevel' Location.located
 
 and toplevel' =
   | TopDo of comp
+  | TopTime of comp
   | TopFunction of Name.ident * (Name.ident * Type.valty) list * comp
   | TopExternal of Name.ident * string * Type.funty
   | TopFile of toplevel list
@@ -42,6 +43,7 @@ type tytoplevel = tytoplevel' Location.located
 
 and tytoplevel' =
   | TyTopDo of comp * Type.cmdty
+  | TyTopTime of comp * Type.cmdty
   | TyTopFunction of
       Name.ident * (Name.ident * Type.valty) list * comp * Type.cmdty
   | TyTopExternal of Name.ident * string * Type.funty
