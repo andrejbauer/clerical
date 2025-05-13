@@ -61,6 +61,19 @@ Dune compiles the program and creates the executable `clerical.exe` (also on Mac
     ./clerical.exe --prelude prelude.real
 
 
+## Unit testing
+
+Dune unit tests can be run with
+
+    dune runtest
+
+and validate tests with
+
+    dune promote
+
+See [Writting and running tests](https://dune.readthedocs.io/en/stable/tests.html) section of Dune documentation for
+further information on unit testing.
+
 ## Repository structure
 
 The structure of the repository:
