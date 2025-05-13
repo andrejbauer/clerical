@@ -68,6 +68,7 @@ let funty (dts, t) = (List.map valty dts, cmpty t)
 (** Desugar a computation *)
 let rec comp ctx { Location.data = c; Location.loc } =
   let comp' ctx = function
+
     | Input.Var x -> (
         match index x ctx with
         | None -> error ~loc (UnknownIdentifier x)
@@ -81,11 +82,15 @@ let rec comp ctx { Location.data = c; Location.loc } =
         | Some k ->
             let es = List.map (comp ctx) es in
             Syntax.Apply (k, es))
+
     | Input.Skip -> Syntax.Skip
+
     | Input.Trace -> Syntax.Trace
+
     | Input.Sequence (c1, c2) ->
         let c1 = comp ctx c1 and c2 = comp ctx c2 in
         Syntax.Sequence (c1, c2)
+
     | Input.Case lst ->
         let rec fold = function
           | [] -> []
@@ -94,12 +99,15 @@ let rec comp ctx { Location.data = c; Location.loc } =
               (b, c) :: lst
         in
         Syntax.Case (fold lst)
+
     | Input.If (b, c1, c2) ->
         let b = comp ctx b and c1 = comp ctx c1 and c2 = comp ctx c2 in
         Syntax.If (b, c1, c2)
+
     | Input.While (b, c) ->
         let b = comp ctx b and c = comp ctx c in
         Syntax.While (b, c)
+
     | Input.Let (lst, c) ->
         let rec fold ctx' lst' = function
           | [] -> (ctx', List.rev lst')
@@ -111,6 +119,7 @@ let rec comp ctx { Location.data = c; Location.loc } =
         let ctx, lst = fold ctx [] lst in
         let c = comp ctx c in
         Syntax.Let (lst, c)
+
     | Input.Newvar (lst, c) ->
         let rec fold ctx' lst' = function
           | [] -> (ctx', List.rev lst')
@@ -122,12 +131,14 @@ let rec comp ctx { Location.data = c; Location.loc } =
         let ctx, lst = fold ctx [] lst in
         let c = comp ctx c in
         Syntax.Newvar (lst, c)
+
     | Input.Assign (x, e) -> (
         match index x ctx with
         | None -> error ~loc (UnknownIdentifier x)
         | Some k ->
             let e = comp ctx e in
             Syntax.Assign (k, e))
+
     | Input.Lim (x, e) ->
         let ctx = add_ident x ctx in
         let e = comp ctx e in
@@ -138,22 +149,32 @@ let rec comp ctx { Location.data = c; Location.loc } =
 
 let rec toplevel ctx { Location.data = c; Location.loc } =
   let toplevel' ctx = function
+
     | Input.TopDo c ->
         let c = comp ctx c in
         (ctx, Syntax.TopDo c)
+
+    | Input.TopTime c ->
+        let c = comp ctx c in
+        (ctx, Syntax.TopTime c)
+
     | Input.TopFunction (f, xts, c) ->
         let c = comp (add_args xts ctx) c
         and xts = List.map (fun (x, t) -> (x, valty t)) xts in
         let ctx = add_fun f ctx in
         (ctx, Syntax.TopFunction (f, xts, c))
+
     | Input.TopExternal (f, s, ft) ->
         let ctx = add_fun f ctx in
         let ft = funty ft in
         (ctx, Syntax.TopExternal (f, s, ft))
+
     | Input.TopLoad fn ->
         let ctx, cmds = load ctx fn in
         (ctx, Syntax.TopFile cmds)
+
     | Input.TopPrecision p -> (ctx, Syntax.TopPrecision (Mpz.get_int p))
+
     | Input.TopDomains d -> (ctx, Syntax.TopDomains (Mpz.get_int d))
   in
   let ctx, c = toplevel' ctx c in

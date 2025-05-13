@@ -8,5 +8,6 @@
   picos_std.structured
   picos_mux.multififo
   util
+  unix
   reals
   typing))

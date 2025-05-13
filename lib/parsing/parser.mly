@@ -33,6 +33,7 @@
 (* Toplevel commands *)
 %token <string> QUOTED_STRING
 %token FUNCTION EXTERNAL
+%token TIME
 %token LOAD
 %token PRECISION
 %token DOMAINS
@@ -76,6 +77,7 @@ plain_topcomp:
                                                             { TopFunction (f, xs, c) }
   | EXTERNAL f=var_name COLON ft=funty EQ s=QUOTED_STRING   { TopExternal (f, s, ft) }
   | DO c=term                                               { TopDo c }
+  | TIME c=term                                             { TopTime c }
   | PRECISION p=NUMERAL                                     { TopPrecision p }
   | DOMAINS d=NUMERAL                                       { TopDomains d }
 

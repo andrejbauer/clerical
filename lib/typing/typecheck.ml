@@ -193,21 +193,31 @@ and newvar_clauses ctx lst =
 let rec toplevel ctx { Location.data = tc; loc } =
   let ctx, tc =
     match tc with
+
     | Syntax.TopDo c ->
         let t = comp ctx c in
         (ctx, Syntax.TyTopDo (c, t))
+
+    | Syntax.TopTime c ->
+        let t = comp ctx c in
+        (ctx, Syntax.TyTopTime (c, t))
+
     | Syntax.TopFunction (f, xts, c) ->
         let t = comp (push_args xts ctx) c in
         let ft = (List.map snd xts, t) in
         let ctx = push_fun ft ctx in
         (ctx, Syntax.TyTopFunction (f, xts, c, t))
+
     | Syntax.TopExternal (f, s, ft) ->
         let ctx = push_fun ft ctx in
         (ctx, Syntax.TyTopExternal (f, s, ft))
+
     | Syntax.TopFile lst ->
         let ctx, cmds = topfile ctx lst in
         (ctx, Syntax.TyTopFile cmds)
+
     | Syntax.TopPrecision p -> (ctx, Syntax.TyTopPrecision p)
+
     | Syntax.TopDomains d ->
         if 1 <= d && d <= 128 then (ctx, Syntax.TyTopDomains d)
         else error ~loc InvalidDomains
