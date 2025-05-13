@@ -1,4 +1,4 @@
-(* Runtime values and computations. *)
+(** Runtime values. *)
 
 (** Value *)
 type value =
@@ -7,7 +7,7 @@ type value =
   | VReal of Reals.Real.t
   | VUnit
 
-(** A value that is being computed in paralell. *)
+(** A value that is computed in parallel. *)
 type value_promise = value Parallel.promise
 
 (** Extract an integers from a value *)
@@ -42,6 +42,3 @@ let print_value v ppf =
   | VInteger k -> Format.fprintf ppf "%t" (fun ppf -> Mpz.print ppf k)
   | VReal r -> Format.fprintf ppf "%s" (Reals.Real.to_string r)
   | VUnit -> Format.fprintf ppf "()"
-
-(** Print the result of a read-write computation *)
-let print_value v ppf = print_value v ppf

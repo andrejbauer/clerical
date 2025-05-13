@@ -87,26 +87,6 @@ let print_trace ~loc ~prec Run.{ frame; frames; _ } =
           Format.fprintf ppf "%s:\t%t" x (Value.print_value (Parallel.await p)))
         ppf xvs)
 
-(** Extraction of values with expected type *)
-
-(* (\** Convert a value promise to an integer, or die. *\) *)
-(* let as_integer ~loc p = *)
-(*   match Value.(awaiting value_as_integer p) with *)
-(*   | None -> Run.error ~loc Run.IntegerExpected *)
-(*   | Some k -> k *)
-
-(* (\** Convert a value promise to a boolean, or die. *\) *)
-(* let as_boolean ~loc p = *)
-(*   match Value.(awaiting value_as_boolean p) with *)
-(*   | None -> Run.error ~loc Run.BooleanExpected *)
-(*   | Some b -> b *)
-
-(* (\** Convert a value promise to a real, or die. *\) *)
-(* let as_real ~loc p = *)
-(*   match Value.(awaiting value_as_real p) with *)
-(*   | None -> Run.error ~loc Run.RealExpected *)
-(*   | Some r -> r *)
-
 (** Make sure that the given value is a unit. *)
 let as_unit ~loc v =
   match v with
