@@ -1,0 +1,46 @@
+(* The Clerical prelude. This file gets loaded before anything
+   else, unless you use --no-prelude. *)
+
+(* Definitions of built-in functions. These are implemented
+    in the OCaml code, here we just bind them to names. *)
+
+(* Integer comparisons *)
+
+external ( < ) : (int, int) -> bool = "<"
+external ( > ) : (int, int) -> bool = ">"
+external ( <= ) : (int, int) -> bool = "<="
+external ( >= ) : (int, int) -> bool = ">="
+external ( <> ) : (int, int) -> bool = "<>"
+external ( == ) : (int, int) -> bool = "=="
+
+(* Integer arithmetic *)
+
+external ( - ) : (int, int) -> int = "-"
+external ( + ) : (int, int) -> int = "+"
+external ( * ) : (int, int) -> int = "*"
+
+(* shift(a,k) computes a * 2^k in integer arithetic. *)
+external shift : (int, int) -> int = "shift"
+
+(* Logical connectives. *)
+
+external ( ! ) : (bool) -> bool = "not"
+
+(* Warning: these are *not* short-circuit, for those we need language support. *)
+external ( && ) : (bool, bool) -> bool = "&&"
+external ( || ) : (bool, bool) -> bool = "||"
+
+(* Conversion *)
+
+external real : (int) -> real = "real"
+external int : (real) -> int = "int"
+
+(* Real-valued arithmetic *)
+external ( +. ) : (real, real) -> real = "+."
+external ( /. ) : (real, real) -> real = "/."
+external ( -. ) : (real, real) -> real = "-."
+external ( *. ) : (real, real) -> real = "*."
+
+(* Real-valued comparisons *)
+external ( <. ) : (real, real) -> bool = "<."
+external ( >. ) : (real, real) -> bool = ">."
