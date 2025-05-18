@@ -17,6 +17,7 @@ let reserved =
     ("in", IN);
     ("int", INT);
     ("let", LET);
+    ("plet", PLET);
     ("lim", LIM);
     ("load", LOAD);
     ("real", REAL);
@@ -27,6 +28,7 @@ let reserved =
     ("true", BOOLEAN true);
     ("unit", UNIT);
     ("var", VAR);
+    ("pvar", PVAR);
     ("while", WHILE);
   ]
 

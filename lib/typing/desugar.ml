@@ -122,6 +122,28 @@ let rec comp ctx { Location.data = c; Location.loc } =
         let ctx, lst = fold ctx [] lst in
         let c = comp ctx c in
         Syntax.Newvar (lst, c)
+    | Input.PLet (lst, c) ->
+        let rec fold ctx' lst' = function
+          | [] -> (ctx', List.rev lst')
+          | (x, c) :: lst ->
+              let c = comp ctx c in
+              let ctx' = add_ident x ctx' and lst' = (x, c) :: lst' in
+              fold ctx' lst' lst
+        in
+        let ctx, lst = fold ctx [] lst in
+        let c = comp ctx c in
+        Syntax.PLet (lst, c)
+    | Input.PNewvar (lst, c) ->
+        let rec fold ctx' lst' = function
+          | [] -> (ctx', List.rev lst')
+          | (x, c) :: lst ->
+              let c = comp ctx c in
+              let ctx' = add_ident x ctx' and lst' = (x, c) :: lst' in
+              fold ctx' lst' lst
+        in
+        let ctx, lst = fold ctx [] lst in
+        let c = comp ctx c in
+        Syntax.PNewvar (lst, c)
     | Input.Assign (x, e) -> (
         match index x ctx with
         | None -> error ~loc (UnknownIdentifier x)

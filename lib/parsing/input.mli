@@ -21,6 +21,8 @@ and comp' =
   | While of comp * comp
   | Let of (Name.ident * comp) list * comp
   | Newvar of (Name.ident * comp) list * comp
+  | PLet of (Name.ident * comp) list * comp
+  | PNewvar of (Name.ident * comp) list * comp
   | Assign of Name.ident * comp
   | Lim of Name.ident * comp
   | Trace

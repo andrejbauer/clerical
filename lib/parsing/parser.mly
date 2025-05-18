@@ -27,7 +27,7 @@
 %token WHILE DO
 %token CASE
 %token IF THEN ELSE
-%token LET VAR AND IN
+%token LET VAR AND IN PLET PVAR
 %token LIM
 
 (* Toplevel commands *)
@@ -95,6 +95,8 @@ plain_term:
   | WHILE e=op_term DO c=term END                               { While (e, c) }
   | LET a=separated_nonempty_list(AND,let_clause) IN c=term     { Let (a, c) }
   | VAR a=separated_nonempty_list(AND,var_clause) IN c=term     { Newvar (a, c) }
+  | PLET a=separated_nonempty_list(AND,let_clause) IN c=term    { PLet (a, c) }
+  | PVAR a=separated_nonempty_list(AND,var_clause) IN c=term    { PNewvar (a, c) }
   | x=var_name COLONEQ e=op_term                                { Assign (x, e) }
   | LIM x=var_name DARROW e=term                                { Lim (x, e) }
 

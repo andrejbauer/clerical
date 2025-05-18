@@ -137,6 +137,12 @@ let rec comp ctx { Location.data = c; loc } =
   | Syntax.Newvar (lst, c) ->
       let ctx = newvar_clauses ctx lst in
       comp ctx c
+  | Syntax.PLet (lst, c) ->
+      let ctx = let_clauses ctx lst in
+      comp ctx c
+  | Syntax.PNewvar (lst, c) ->
+      let ctx = newvar_clauses ctx lst in
+      comp ctx c
   | Syntax.Assign (k, e) -> (
       match lookup_ref k ctx with
       | None -> error ~loc InvalidAssign
