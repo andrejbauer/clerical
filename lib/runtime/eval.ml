@@ -7,12 +7,7 @@ module Real = Reals.Real
 (** Make the stack read-only by pushing a new empty top frame onto it, and
     converting the read-write entries to read-only entries. *)
 let make_ro Run.{ frame; frames; funs } =
-  let rw_to_ro = function
-    | (_, Run.RO _) as e -> e
-    | x, Run.RW r -> (x, Run.RO !r)
-  in
-  let frames = List.map (List.map rw_to_ro) (frame :: frames) in
-  Run.{ frame = []; frames; funs }
+  Run.{ frame = []; frames = frame :: frames; funs }
 
 (** Push a read-write value onto the top frame. *)
 let push_rw x v st = Run.{ st with frame = (x, RW (ref v)) :: st.frame }
