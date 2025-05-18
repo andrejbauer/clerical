@@ -54,8 +54,8 @@ let ro_as_unit (RO v) = value_as_unit v
 (** Extract a value from a read-only computation *)
 let ro_as_value (RO v) = v
 
-(** Convert the result of a read-only computation to the result of
-    a read-write computation.*)
+(** Convert the result of a read-only computation to the result of a read-write
+    computation.*)
 let ro_as_rw (RO v) = RW v
 
 (** Print a value *)

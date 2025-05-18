@@ -1,9 +1,7 @@
 open Util
 
 type operator = string
-
 type ty = TBoolean | TInteger | TReal | TUnit
-
 type funty = ty list * ty
 
 type comp = comp' Location.located

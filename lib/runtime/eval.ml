@@ -314,42 +314,35 @@ let topexternal ~loc stack s =
 
 let rec toplevel ~quiet runtime { Location.data = c; Location.loc } =
   match c with
-
   | Syntax.TyTopDo (c, Type.Cmd dt) ->
       let v = topcomp ~max_prec:!Config.max_prec runtime c in
       if not quiet then
         Format.printf "%t : %t@." (Value.print_result v) (Type.print_valty dt);
       runtime
-
   | Syntax.TyTopTime (c, Type.Cmd dt) ->
       let t0 = Unix.gettimeofday () in
       let v = topcomp ~max_prec:!Config.max_prec runtime c in
       let t1 = Unix.gettimeofday () in
       if not quiet then
-        Format.printf "%t : %t@." (Value.print_value v) (Type.print_valty dt) ;
-      Format.printf "Execution time: %f s@." (t1 -. t0) ;
+        Format.printf "%t : %t@." (Value.print_result v) (Type.print_valty dt);
+      Format.printf "Execution time: %f s@." (t1 -. t0);
       runtime
-
   | Syntax.TyTopFunction (f, xts, c, t) ->
       let runtime = topfun runtime (List.map fst xts) c in
       if not quiet then
         Format.printf "function %s : %t@." f
           (Type.print_funty (List.map snd xts, t));
       runtime
-
   | Syntax.TyTopExternal (f, s, ft) ->
       let runtime = topexternal ~loc runtime s in
       if not quiet then
         Format.printf "external %s : %t@." f (Type.print_funty ft);
       runtime
-
   | Syntax.TyTopFile cmds -> topfile ~quiet runtime cmds
-
   | Syntax.TyTopPrecision p ->
       Config.out_prec := p;
       if not quiet then Format.printf "Output precision set to %d@." p;
       runtime
-
   | Syntax.TyTopDomains d ->
       Config.domains := Some d;
       if not quiet then Format.printf "Number of domains set to %d@." d;
