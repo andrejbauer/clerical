@@ -88,7 +88,7 @@ Please consult:
 
 * [`doc/syntax.md`](doc/syntax.md) for a brief explanation of the syntax
 * [`examples`](./examples) for examples of Clerical programs
-* [`prelude.real`)(./prelude.real) for the built-in functions and operators
+* [`prelude.real`](./prelude.real) for the built-in functions and operators
 
 ## How the parallel features work
 
@@ -118,5 +118,3 @@ Once the queue of active threads becomes empty:
 
 * If there are any resigned threads, the operation `Resign` is performed. Upon resumption, all the resigned threads are resumed (with better precision and more fuel).
 * If there are no resigned threads, the error `InvalidCase` is reported.
-
-
