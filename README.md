@@ -63,4 +63,4 @@ Please consult:
 
 * [`doc/syntax.md`](doc/syntax.md) for a brief explanation of the syntax
 * [`examples`](./examples) for examples of Clerical programs
-* [`prelude.real`)(./prelude.real) for the built-in functions and operators
+* [`prelude.real`](./prelude.real) for the built-in functions and operators
