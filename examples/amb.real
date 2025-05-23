@@ -11,6 +11,7 @@ function guess(int x):
       | true => y := 2 * y
       | true => y := 2 * y + 1
       end
+    end
   end
 
 function foo():
@@ -31,6 +32,10 @@ function bar():
 function baz():
   var x := (case true => 0 | true => 1 end) in
   while x == 0 do skip end  
+
+function amb():
+  var x := (case true => 0 | true => 1 end) in
+  x
 
 function qux():
   while (case true => true | true => false end) do skip end

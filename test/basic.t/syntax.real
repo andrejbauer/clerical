@@ -1,0 +1,20 @@
+(* Test every construct. *)
+function f(int x, int y) : x + y
+do f(20, 22)
+(* External is tested by external.real *)
+do 1.0 /. (3.0 *. real(14))
+precision 100
+do 1.0 /. (3.0 *. real(14))
+domains 1
+do case
+   | (while true do skip end; true) => 13
+   | 3.0 /. 3.0 <. 2.0 -. 1.0 => 23
+   | true => 42
+   end
+domains 5
+do case
+   | (while true do skip end; true) => 13
+   | 3.0 /. 3.0 <. 2.0 -. 1.0 => 23
+   | true => 42
+   end
+

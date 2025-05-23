@@ -1,9 +1,0 @@
-(executable
-  (name "clerical")
-  (public_name "clerical")
-  (flags -w +a-4-27-29-50)
-  (libraries sedlex gmp menhirLib)
-  (preprocess (pps sedlex.ppx)))
-
-(menhir
-  (modules parser))

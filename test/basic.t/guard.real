@@ -1,0 +1,22 @@
+do
+  case
+  | 0.0 <. 0.0 => 13
+  | 0.0 <. 0.00000000000000000000000000000001 => 42
+  end
+
+do
+  case
+  | (while true do skip end; true) => 13
+  | true => 42
+  end
+
+do
+  case
+  | (var i := 0 in while i < 10000 do i := i + 1 end; true) => 42
+  end
+
+do
+  case
+  | (var i := 0 in while i < 10000 do i := i + 1 end; true) => 13
+  | true => 42
+  end

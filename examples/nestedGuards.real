@@ -1,0 +1,48 @@
+(*TODO:*)
+function g(bool b, int n):
+  case
+  | (var j := 0 in while j < n do j := j + 1 end ; false) => false
+  |  (while true do skip end; true) => false
+  | (var i := 0 in while i < n do i := i + 1 end ; true) => b
+  | (while true do skip end; true) => false
+  | (var j := 0 in while j < n do j := j + 1 end ; false) => false
+  | (var j := 0 in while j < n do j := j + 1 end ; false) => false
+  end
+
+function f(bool b, int n):
+  case
+  | (var j := 0 in while j < n do j := j + 1 end ; false) => false
+  | (while true do skip end; true) => false
+  | (while true do skip end; true) => false
+  | (while true do skip end; true) => false
+  | (var i := 0 in while i < n do i := i + 1 end ; true) => b
+  | (var j := 0 in while j < n do j := j + 1 end ; false) => false
+  | (var j := 0 in while j < n do j := j + 1 end ; false) => false
+  end
+
+function f2():
+  case
+  | (while true do skip end; true) => true
+  | (while true do skip end; true) => true
+  end
+
+function demo():
+  case
+    | f(false, 1000) => 17
+    | f(false, 80000) => 11
+    | (while true do skip end; true) => 27
+    | (case
+       | (case
+          | (while true do skip end; true) => true
+          | (while true do skip end; true) => true
+          | (case 
+              | (while true do skip end; true) => true
+              | (while true do skip end; true) => true
+              end) => true
+          end) => true
+       | f(true, 20000) => true
+       end) => 42 (* this one should happen *)
+
+    (*if you remove the f2() line, the CPU stops being consumed after function ends*)
+    | f2() => 69
+  end

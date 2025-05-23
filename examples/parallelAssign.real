@@ -1,0 +1,8 @@
+function f():
+  var i := 0 in
+  while i < 1000000 do i := i + 1 end;
+  6
+
+function demo ():
+  var a := f() and b := f() and c := f() and d := f() in
+  a + b + c + d

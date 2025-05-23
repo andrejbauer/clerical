@@ -1,0 +1,30 @@
+(* Euler's number *)
+function e ():
+  lim n =>
+    let err = shift(1, n) in
+    var i := 1
+    and e := 0.0
+    and f := 1 in
+    while f <= err do
+      e := e +. 1.0 /. real(f) ;
+      f := f * i ;
+      i := i + 1
+    end ;
+    e
+
+do lim n => 0.0
+do lim n => 1.0 /. real(shift(2, n))
+do e()
+
+precision 100
+
+do lim n => 0.0
+do lim n => 1.0 /. real(shift(2, n))
+do e()
+do lim n => lim m => 1.0 /. real(shift(2, n + m))
+
+precision 1000
+
+do lim n => 0.0
+do lim n => 1.0 /. real(shift(2, n))
+do e()

@@ -23,6 +23,7 @@ function guard4():
   | true => 42
   end
 
+(* whether this one returns 42 depends on the scheduling strategy *)
 function guard5():
   case
   | true =>
@@ -36,8 +37,8 @@ function guard5():
   end
 
 (* They should all compute 42 *)
-do guard1()
-do guard2()
-do guard3()
-do guard4()
-do guard5()
+(* do guard1() *)
+(* do guard2() *)
+(* do guard3() *)
+(* do guard4() *)
+(* do guard5() *)

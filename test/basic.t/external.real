@@ -1,0 +1,26 @@
+(* Test external functions *)
+do 1 < 2
+do 1 > 2
+do 1 <= 2
+do 1 >= 2
+do 1 <> 2
+do 1 == 2
+do 20 + 22
+do 3 * 14
+do 50 - 8
+do shift(1, 10)
+do shift(3, 1000)
+do ! false
+do ! true
+do false && true
+do false || true
+do real(42)
+do int (20.0 +. 22.0)
+do 20.0 +. 22.0
+do 3.0 *. 14.0
+do 50.0 -. 8.0
+do 126.0 /. 3.0
+do 1.0 <. 7.0
+do 1.0 >. 17.0
+do 1.00000000000000000000000000000000000000000000000000000000000001 >. 1.0
+
