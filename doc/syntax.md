@@ -14,6 +14,7 @@ The datatypes are
 * `bool` – booleans `true` and `false`
 * `int` – integers (implemented using GMP large integers)
 * `real` – real numbers (using MPFR for arbitrary precision)
+* `t[]` – array of values of type `t`
 
 ### Function definition
 
@@ -58,7 +59,7 @@ The toplevel command
 
     do ⟨cmd⟩
 
-evaluates command `⟨cmd⟩`. For example:
+evaluates the command `⟨cmd⟩`. For example:
 
     do 1.0 +. 3.0
 
@@ -71,6 +72,15 @@ You can set the *output* precision at which a toplevel command prints reals with
 where `⟨int⟩` is the number of bits that must be correct. Note that setting higher
 precision will of course require more computation.
 
+### Setting the number of CPU cores
+
+TThe toplevel command
+
+    domains ⟨num⟩
+
+sets the number of CPU cores to be used in parallel computation to `⟨num⟩`.
+By default, Clerical uses all cores except one.
+
 ### Loading a file
 
 You may load a file into Clerical with
@@ -79,6 +89,14 @@ You may load a file into Clerical with
 
 Alternatively, you can load it on the command line with `-l` option. Run Clerical with
 `--help` to see other command-line options.
+
+### Timing
+
+The toplevel command
+
+    time ⟨cmd⟩
+
+evaluates the command `⟨cmd⟩` and reports how long the evaluation took. This is useful for rudimentary benchmarking.
 
 ## Support for debugging
 
@@ -114,6 +132,8 @@ The prelude defines a function `real` that takes an integer and returns a real.
 
 The prelude defines a function `int` that takes a real and returns an integer
 that is within 1 of the real.
+
+Note: standard rounding functions such as `floor` and `ceil` are not computable.
 
 ### Command `skip`
 
@@ -164,6 +184,16 @@ Local definitions are introduced as
 
 The definitions are valid in `c`.
 
+A parallel local definition
+
+    plet x₁ = e₁
+    and x₂ = e₂
+    ...
+    and xᵢ = eᵢ in
+      c
+
+is like `let`, except that it evaluates the expressions `e₁, ..., eᵢ` in parallel.
+
 ### Local variables (mutable)
 
 Local variables are introduced as
@@ -175,6 +205,15 @@ Local variables are introduced as
       c
 
 The variables are valid in `c`.
+
+A **parallel** version of `var` is
+
+    pvar x₁ = e₁
+    and x₂ = e₂
+    ...
+    and xᵢ = eᵢ in
+      c
+
 
 ### Assignment
 
@@ -189,6 +228,24 @@ A limit of a sequence is defined as
     lim n => e
 
 where `e` must evaluate to a term which is within distance `2⁻ⁿ` of `n`.
+
+### Arrays
+
+The elements of a non-empty array may be listed as
+
+    [e₁, ⋯, eᵢ]
+
+The construction
+
+    array[e₁] i => e₂
+
+creates an array of size `e₁` and initializes the `i`-th element of array with `e₂`,
+where the variable `i` is bound in `e₂`.
+
+The `e₂`-th element of an array `e₁` is accessed as `e₁[e₂]`.
+
+Note: at the time of writing this documentation, all arrays are read-only. Hopefully we will
+remember to updated this section when we introduce assignment to arrays.
 
 ### Function application
 
