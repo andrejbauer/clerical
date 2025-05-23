@@ -28,6 +28,10 @@ and comp' =
   | Assign of index * comp
   | Lim of Name.ident * comp
   | Trace
+  | ArrayEnum of comp list
+  | ArrayInit of comp * Name.ident * comp
+  | ArrayIndex of comp * comp
+  | ArrayLen of comp
 
 type fundef =
   (Name.ident * (Name.ident * Type.valty) list * comp * Type.cmdty) Location.located
