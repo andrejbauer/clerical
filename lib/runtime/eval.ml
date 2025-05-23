@@ -102,7 +102,13 @@ let as_real ~loc v =
 let as_unit ~loc (Value.RW r) =
   match r with
   | Value.VUnit -> ()
-  | Value.(VInteger _ | VBoolean _ | VReal _) -> Run.error ~loc Run.UnitExpected
+  | Value.(VInteger _ | VBoolean _ | VReal _ | VArray _) ->
+      Run.error ~loc Run.UnitExpected
+
+let as_array ~loc v =
+  match Value.ro_as_array v with
+  | Some vs -> vs
+  | None -> Run.error ~loc Run.ArrayExpected
 
 let as_value ~loc v = Value.ro_as_value v
 
@@ -225,6 +231,36 @@ let rec comp ~prec stack { Location.data = c; Location.loc } :
         in
         let poorest = try_lim 1 in
         loop 1 poorest)
+  | Syntax.ArrayEnum es ->
+      let vs =
+        Array.of_list
+        @@ List.mapi
+             (fun i e ->
+               let stack =
+                 push_ro "_i" (Value.VInteger (Mpzf.of_int i)) stack
+               in
+               comp_ro_value ~prec stack e)
+             es
+      in
+      (stack, Value.(return (VArray vs)))
+  | Syntax.ArrayInit (e1, x, e2) ->
+      let n = comp_ro_int ~loc ~prec stack e1 in
+      let vs =
+        Array.init n (fun i ->
+            let stack = push_ro x (Value.VInteger (Mpzf.of_int i)) stack in
+            comp_ro_value ~prec stack e2)
+      in
+      (stack, Value.(return (VArray vs)))
+  | Syntax.ArrayIndex (e1, e2) ->
+      let vs = comp_ro_array ~loc ~prec stack e1 in
+      let i = comp_ro_int ~loc ~prec stack e2 in
+      let v = vs.(i) in
+      (* TODO: index could be out of bounds, report error *)
+      (stack, Value.(return v))
+  | Syntax.ArrayLen e ->
+      let vs = comp_ro_array ~loc ~prec stack e in
+      let n = Array.length vs in
+      (stack, Value.(return (Value.VInteger (Mpzf.of_int n))))
 
 (** Compute a read-only computation. *)
 and comp_ro ~prec stack c : Value.result_ro =
@@ -242,6 +278,15 @@ and comp_ro_boolean ~loc ~prec stack c =
 (** Compute a read-only computation and extract its value as a real. *)
 and comp_ro_real ~loc ~prec stack c =
   as_real ~loc:c.Location.loc (comp_ro ~prec stack c)
+
+(** Compute a read-only computation and extract its value as an array. *)
+and comp_ro_array ~loc ~prec stack c =
+  as_array ~loc:c.Location.loc (comp_ro ~prec stack c)
+
+(** Compute a read-only computation and extract its value as an int. *)
+and comp_ro_int ~loc ~prec stack c =
+  (* TODO: integer could be too large, catch the error (see also Mpz.fits_int_p) *)
+  Mpz.get_int @@ as_integer ~loc:c.Location.loc (comp_ro ~prec stack c)
 
 (* Evaluate a case statement using parallel threads. *)
 and comp_case ~loc ~prec stack cases =
@@ -273,7 +318,9 @@ let topcomp ~max_prec stack ({ Location.loc; _ } as c) =
       | Value.VReal r as v ->
           require !Config.out_prec r;
           Value.return v
-      | (Value.VUnit | Value.VBoolean _ | Value.VInteger _) as v ->
+      | (Value.VUnit | Value.VBoolean _ | Value.VInteger _ | Value.VArray _) as
+        v ->
+          (* TODO: if we got an array of reals, should they all be sufficiently precise? *)
           Value.return v
     with Run.NoPrecision ->
       if !Config.verbose then

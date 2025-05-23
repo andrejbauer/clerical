@@ -1,0 +1,6 @@
+do [1, 2, 3]
+
+do array [10] i => real(i) 
+
+do var a := (array[10] i => real(i)) in
+   a[0] +. a[9]
