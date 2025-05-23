@@ -52,7 +52,6 @@
 %left     INFIXOP2
 %left     INFIXOP3
 %right    INFIXOP4
-%nonassoc LBRACK
 
 %start <Input.toplevel list> file
 %start <Input.toplevel> commandline
@@ -126,14 +125,8 @@ plain_term:
   | LIM x=var_name DARROW e=term
     { Lim (x, e) }
 
-  | LBRACK cs=separated_nonempty_list(COMMA, term) RBRACK
-    { ArrayEnum cs }
-
   | ARRAY LBRACK n=term RBRACK i=var_name DARROW e=term
     { ArrayInit (n, i, e) }
-
-  | c=term LBRACK i=term RBRACK
-    { ArrayIndex (c, i) }
 
   | LEN LPAREN c=term RPAREN
     { ArrayLen c }
@@ -156,16 +149,38 @@ plain_prefix_term:
   | f=var_name LPAREN es=separated_list(COMMA, term) RPAREN
     { Apply (f, es) }
 
-(* simple_term: mark_location(plain_simple_term) { $1 } *)
+simple_term: mark_location(plain_simple_term) { $1 }
 plain_simple_term:
-  | x=var_name                 { Var x }
-  | k=NUMERAL                  { Integer k }
-  | r=FLOAT                    { Float r }
-  | b=BOOLEAN                  { Boolean b }
-  | SKIP                       { Skip }
-  | TRACE                      { Trace }
-  | LPAREN c=plain_term RPAREN { c }
-  | BEGIN c=plain_term END     { c }
+  | x=var_name
+    { Var x }
+
+  | k=NUMERAL
+    { Integer k }
+
+  | r=FLOAT
+    { Float r }
+
+  | b=BOOLEAN
+    { Boolean b }
+
+  | SKIP
+    { Skip }
+
+  | TRACE
+    { Trace }
+
+  | LPAREN c=plain_term RPAREN
+    { c }
+
+  | BEGIN c=plain_term END
+    { c }
+
+  | LBRACK cs=separated_nonempty_list(COMMA, term) RBRACK
+    { ArrayEnum cs }
+
+  | c=simple_term LBRACK i=term RBRACK
+    { ArrayIndex (c, i) }
+
 
 var_name:
   | NAME                     { $1 }

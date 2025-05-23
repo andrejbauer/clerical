@@ -1,6 +1,16 @@
 do [1, 2, 3]
 
+do [13, 42, 99][1]
+
+do [[1,2,5], [10, 20], [42, 99, 13], [10, 20]][2][0]
+
+do [[1,2,42], [10, 20], [13, 99, 13], [10, 20]][0][2]
+
+do array [0] i => false
+
 do array [10] i => real(i) 
 
-do var a := (array[10] i => real(i)) in
+do array [5] i => array[i] j => 100 * i + j
+
+do var a := (array[10] i => real(i * i)) in
    a[0] +. a[9]
