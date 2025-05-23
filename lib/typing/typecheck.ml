@@ -37,6 +37,8 @@ type type_error =
   | InvalidAssign
   | ValueExpected
   | InvalidDomains
+  | EmptyArrayEnum
+  | ArrayExpected
 
 exception Error of type_error Location.located
 
@@ -57,6 +59,12 @@ let print_error err ppf =
   | ValueExpected -> Format.fprintf ppf "expected a value but got a command"
   | InvalidDomains ->
       Format.fprintf ppf "the number of domains must be between 1 and 128"
+  | EmptyArrayEnum ->
+      Format.fprintf ppf
+        "an empty array [] is not allowed, use (array[0] i => ...) instead"
+  | ArrayExpected ->
+      Format.fprintf ppf
+        "an empty array [] is not allowed, use (array[0] i => ...) instead"
 
 (** Lookup the type of an identifier *)
 let lookup_val k { frame; frames; _ } =
@@ -153,7 +161,24 @@ let rec comp ctx { Location.data = c; loc } =
   | Syntax.Lim (_, e) ->
       let ctx = push_ro Type.Integer ctx in
       check_expr ctx Type.Real e;
-      Type.Cmd Type.Real
+      Type.(Cmd Real)
+  | Syntax.ArrayEnum [] -> error ~loc EmptyArrayEnum
+  | Syntax.ArrayEnum (e :: es) ->
+      let dt = expr ctx e in
+      List.iter (check_expr ctx dt) es;
+      Type.(Cmd (Array dt))
+  | Syntax.ArrayInit (e1, _, e2) ->
+      check_expr ctx Type.Integer e1;
+      let ctx = push_ro Type.Integer ctx in
+      let dt = expr ctx e2 in
+      Type.(Cmd (Array dt))
+  | Syntax.ArrayIndex (e1, e2) ->
+      let dt = check_array ctx e1 in
+      check_expr ctx Type.Integer e2;
+      Type.Cmd dt
+  | Syntax.ArrayLen e ->
+      let _ = check_array ctx e in
+      Type.(Cmd Integer)
 
 (** Infer the type of an expression (read-only computation). *)
 and expr ctx c =
@@ -167,6 +192,14 @@ and check_comp ctx (Type.Cmd t) c =
 
 (** Check that an expression (read-only computation) has the given type. *)
 and check_expr ctx dt c = check_comp ctx (Type.Cmd dt) c
+
+(** Check that a read-only computation is an array and return the type
+    of the array elements. *)
+and check_array ctx e =
+  match expr ctx e with
+  | Type.Array dt -> dt
+  | Type.(Boolean | Integer | Real | Unit) ->
+      error ~loc:e.Location.loc ArrayExpected
 
 (** Check that the arguments of a function have the given types. *)
 and check_args ~loc ctx dts cs =

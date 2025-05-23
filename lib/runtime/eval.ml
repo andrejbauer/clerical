@@ -190,10 +190,10 @@ let rec comp ~prec stack { Location.data = c; Location.loc } :
           (stack, Value.(return VUnit)))
   | Syntax.Lim (x, e) -> (
       (* when computing at precision n we first try to compute the n-th term
-        of the limit, and use that as the approximate result. If the computation
-        fails we fall back to computing successively the 1st, 2nd, ... term of
-        the limit, and take the last one that doesn't fail.
-     *)
+         of the limit, and use that as the approximate result. If the computation
+         fails we fall back to computing successively the 1st, 2nd, ... term of
+         the limit, and take the last one that doesn't fail.
+      *)
       let try_lim n =
         let stack' = push_ro x (Value.VInteger (Mpzf.of_int n)) stack in
         let r = comp_ro_real ~loc:e.Location.loc ~prec stack' e in
@@ -213,7 +213,7 @@ let rec comp ~prec stack { Location.data = c; Location.loc } :
         try_lim prec_mpfr
       with
       (* If current precision fails, then successively try n = 1, 2, 4, ... up to mpfr_prec, until we fail.
-        We return the last result that succeeded. This strategy was inspired by iRRAM. *)
+         We return the last result that succeeded. This strategy was inspired by iRRAM. *)
       | Run.NoPrecision ->
         let rec loop n previous_result =
           try

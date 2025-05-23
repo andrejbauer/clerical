@@ -50,12 +50,13 @@ let index_fun f { funs; _ } =
   in
   search 0 funs
 
-(** Desugar a value type *)
-let valty = function
+(** Desugar a type *)
+let rec valty = function
   | Input.TBoolean -> Type.Boolean
   | Input.TInteger -> Type.Integer
   | Input.TReal -> Type.Real
   | Input.TUnit -> Type.Unit
+  | Input.TArray t -> Type.Array (valty t)
 
 (** Desugar a computation type *)
 let cmpty t =
@@ -154,7 +155,22 @@ let rec comp ctx { Location.data = c; Location.loc } =
         let ctx = add_ident x ctx in
         let e = comp ctx e in
         Syntax.Lim (x, e)
+    | Input.ArrayEnum es ->
+        let es = List.map (comp ctx) es in
+        Syntax.ArrayEnum es
+    | Input.ArrayInit (e1, x, e2) ->
+        let e1 = comp ctx e1 in
+        let ctx = add_ident x ctx in
+        let e2 = comp ctx e2 in
+        Syntax.ArrayInit (e1, x, e2)
+    | Input.ArrayIndex (e1, e2) ->
+        let e1 = comp ctx e1 and e2 = comp ctx e2 in
+        Syntax.ArrayIndex (e1, e2)
+    | Input.ArrayLen e ->
+        let e = comp ctx e in
+        Syntax.ArrayLen e
   in
+
   let c = comp' ctx c in
   Location.locate ~loc c
 

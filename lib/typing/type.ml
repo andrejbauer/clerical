@@ -1,5 +1,5 @@
 (* Value types *)
-type valty = Boolean | Integer | Real | Unit
+type valty = Boolean | Integer | Real | Unit | Array of valty
 
 (* Computation types *)
 type cmdty = Cmd of valty
@@ -8,12 +8,13 @@ type cmdty = Cmd of valty
 type funty = valty list * cmdty
 
 (** Print a value type *)
-let print_valty dt ppf =
+let rec print_valty dt ppf =
   match dt with
   | Boolean -> Format.fprintf ppf "boolean"
   | Integer -> Format.fprintf ppf "integer"
   | Real -> Format.fprintf ppf "real"
   | Unit -> Format.fprintf ppf "unit"
+  | Array dt -> Format.fprintf ppf "%t[]" (print_valty dt)
 
 (** Print a command type *)
 let print_cmdty (Cmd dt) = print_valty dt
