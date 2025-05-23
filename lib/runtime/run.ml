@@ -19,6 +19,7 @@ type runtime_error =
   | BooleanExpected
   | IntegerExpected
   | RealExpected
+  | ArrayExpected
   | NonnegativeRealExpected
   | PrecisionLoss
   | CannotWrite
@@ -47,6 +48,7 @@ let rec print_error err ppf =
   | BooleanExpected -> Format.fprintf ppf "boolean expected"
   | IntegerExpected -> Format.fprintf ppf "integer expected"
   | RealExpected -> Format.fprintf ppf "real expected"
+  | ArrayExpected -> Format.fprintf ppf "array expected"
   | NonnegativeRealExpected -> Format.fprintf ppf "non-negative real expected"
   | PrecisionLoss ->
       Format.fprintf ppf "loss of precision, try increasing --max-prec"
