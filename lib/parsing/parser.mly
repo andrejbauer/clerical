@@ -14,6 +14,7 @@
 
 (* Parentheses & punctuations *)
 %token LPAREN RPAREN
+%token LBRACK RBRACK
 %token EQ COLONEQ
 %token COMMA SEMICOLON
 %token COLON ARROW
@@ -30,6 +31,7 @@
 %token IF THEN ELSE
 %token LET VAR AND IN PLET PVAR
 %token LIM
+%token LEN ARRAY
 
 (* Toplevel commands *)
 %token <string> QUOTED_STRING
@@ -51,6 +53,7 @@
 %left     INFIXOP2
 %left     INFIXOP3
 %right    INFIXOP4
+%nonassoc LBRACK
 
 %start <Input.toplevel list> file
 %start <Input.toplevel> commandline
@@ -103,17 +106,50 @@ fundefs:
 
 term : mark_location(plain_term) { $1 }
 plain_term:
-  | e=plain_op_term                                             { e }
-  | c1=term SEMICOLON c2=term                                   { Sequence (c1, c2) }
-  | CASE lst=case_cases END                                     { Case lst }
-  | IF e=op_term THEN c1=term ELSE c2=term END                  { If (e, c1, c2) }
-  | WHILE e=op_term DO c=term END                               { While (e, c) }
-  | LET a=separated_nonempty_list(AND,let_clause) IN c=term     { Let (a, c) }
-  | VAR a=separated_nonempty_list(AND,var_clause) IN c=term     { Newvar (a, c) }
-  | PLET a=separated_nonempty_list(AND,let_clause) IN c=term    { PLet (a, c) }
-  | PVAR a=separated_nonempty_list(AND,var_clause) IN c=term    { PNewvar (a, c) }
-  | x=var_name COLONEQ e=op_term                                { Assign (x, e) }
-  | LIM x=var_name DARROW e=term                                { Lim (x, e) }
+  | e=plain_op_term
+    { e }
+
+  | c1=term SEMICOLON c2=term
+    { Sequence (c1, c2) }
+
+  | CASE lst=case_cases END
+    { Case lst }
+
+  | IF e=op_term THEN c1=term ELSE c2=term END
+    { If (e, c1, c2) }
+
+  | WHILE e=op_term DO c=term END
+    { While (e, c) }
+
+  | LET a=separated_nonempty_list(AND,let_clause) IN c=term
+    { Let (a, c) }
+
+  | VAR a=separated_nonempty_list(AND,var_clause) IN c=term
+    { Newvar (a, c) }
+
+  | PLET a=separated_nonempty_list(AND,let_clause) IN c=term
+    { PLet (a, c) }
+
+  | PVAR a=separated_nonempty_list(AND,var_clause) IN c=term
+    { PNewvar (a, c) }
+
+  | x=var_name COLONEQ e=op_term
+    { Assign (x, e) }
+
+  | LIM x=var_name DARROW e=term
+    { Lim (x, e) }
+
+  | LBRACK cs=separated_nonempty_list(COMMA, term) RBRACK
+    { ArrayEnum cs }
+
+  | ARRAY LBRACK n=term RBRACK i=var_name DARROW e=term
+    { ArrayInit (n, i, e) }
+
+  | c=term LBRACK i=term RBRACK
+    { ArrayIndex (c, i) }
+
+  | LEN LPAREN c=term RPAREN
+    { ArrayLen c }
 
 op_term: mark_location(plain_op_term) { $1 }
 plain_op_term:
@@ -171,25 +207,40 @@ case_cases:
   | BAR? lst=separated_nonempty_list(BAR, case_case)  { lst }
 
 case_case:
-  | e=op_term DARROW c=term  { (e, c) }
+  | e=op_term DARROW c=term
+    { (e, c) }
 
 let_clause:
-  | x=var_name EQ e=op_term  { (x, e) }
+  | x=var_name EQ e=op_term
+    { (x, e) }
 
 var_clause:
-  | x=var_name COLONEQ e=op_term  { (x, e) }
+  | x=var_name COLONEQ e=op_term
+    { (x, e) }
 
 fun_args:
-  | xs=separated_list(COMMA, arg_decl) { xs }
+  | xs=separated_list(COMMA, arg_decl)
+    { xs }
 
 arg_decl:
-  | dt=datatype x=var_name { (x, dt) }
+  | dt=datatype x=var_name
+    { (x, dt) }
 
 datatype:
-  | BOOL { TBoolean }
-  | INT  { TInteger }
-  | REAL { TReal }
-  | UNIT { TUnit }
+  | BOOL
+    { TBoolean }
+
+  | INT
+    { TInteger }
+
+  | REAL
+    { TReal }
+
+  | UNIT
+    { TUnit }
+
+  | t=datatype LBRACK RBRACK
+    { TArray t }
 
 funty:
   | LPAREN dts=separated_list(COMMA, datatype) RPAREN ARROW t=datatype
