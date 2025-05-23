@@ -95,6 +95,7 @@ let lookup_fun j { funs; _ } =
   in
   lookup j funs
 
+(** Infer the type of a read-write computation. *)
 let rec comp ctx { Location.data = c; loc } =
   match c with
   | Syntax.Var k -> Type.Cmd (lookup_val k ctx)
@@ -154,16 +155,20 @@ let rec comp ctx { Location.data = c; loc } =
       check_expr ctx Type.Real e;
       Type.Cmd Type.Real
 
+(** Infer the type of an expression (read-only computation). *)
 and expr ctx c =
   let (Type.Cmd dt) = comp (make_ro ctx) c in
   dt
 
+(** Check that a read-write computation has the given type. *)
 and check_comp ctx (Type.Cmd t) c =
   let (Type.Cmd t') = comp ctx c in
   if t <> t' then error ~loc:c.Location.loc (TypeMismatch (t, t'))
 
+(** Check that an expression (read-only computation) has the given type. *)
 and check_expr ctx dt c = check_comp ctx (Type.Cmd dt) c
 
+(** Check that the arguments of a function have the given types. *)
 and check_args ~loc ctx dts cs =
   let rec fold dts' cs' =
     match (dts', cs') with
@@ -196,6 +201,7 @@ and newvar_clauses ctx lst =
   in
   fold ctx lst
 
+(** Typecheck a toplevel directive. *)
 let rec toplevel ctx { Location.data = tc; loc } =
   let ctx, tc =
     match tc with

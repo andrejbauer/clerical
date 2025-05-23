@@ -1,7 +1,7 @@
 open Util
 
 type operator = string
-type ty = TBoolean | TInteger | TReal | TUnit
+type ty = TBoolean | TInteger | TReal | TUnit | TArray of ty
 type funty = ty list * ty
 
 type comp = comp' Location.located
@@ -24,6 +24,10 @@ and comp' =
   | Assign of Name.ident * comp
   | Lim of Name.ident * comp
   | Trace
+  | ArrayEnum of comp list
+  | ArrayInit of comp * Name.ident * comp
+  | ArrayIndex of comp * comp
+  | ArrayLen of comp
 
 type toplevel = toplevel' Location.located
 
