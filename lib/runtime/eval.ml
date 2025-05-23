@@ -262,12 +262,14 @@ let rec comp env { Location.data = c; Location.loc } :
             comp_ro_value ~prec stack e2)
       in
       (stack, Value.(return (VArray vs)))
-  | Syntax.ArrayIndex (e1, e2) ->
+  | Syntax.ArrayIndex (e1, e2) -> (
       let vs = comp_ro_array ~loc ~prec stack e1 in
-      let i = comp_ro_int ~loc ~prec stack e2 in
-      let v = vs.(i) in
-      (* TODO: index could be out of bounds, report error *)
-      (stack, Value.(return v))
+      (* Index could be out of bounds, report error *)
+      try
+        let i = comp_ro_int ~loc ~prec stack e2 in
+        let v = vs.(i) in
+        (stack, Value.(return v))
+      with Invalid_argument e -> Run.error ~loc @@ Run.ArrayError e)
   | Syntax.ArrayLen e ->
       let vs = comp_ro_array ~loc ~prec stack e in
       let n = Array.length vs in
@@ -293,8 +295,9 @@ and comp_ro_array ~loc ~prec stack c =
 
 (** Compute a read-only computation and extract its value as an int. *)
 and comp_ro_int ~loc ~prec stack c =
-  (* TODO: integer could be too large, catch the error (see also Mpz.fits_int_p) *)
-  Mpz.get_int @@ as_integer ~loc:c.Location.loc (comp_ro ~prec stack c)
+  let v = as_integer ~loc:c.Location.loc (comp_ro ~prec stack c) in
+  if Mpz.fits_int_p @@ v then Mpz.get_int v
+  else Run.error ~loc Run.IntegerOverflow
 
 (* Evaluate a case statement using parallel threads. *)
 and comp_case ~loc env cases =
@@ -320,15 +323,21 @@ let topcomp ~max_prec env ({ Location.loc; _ } as c) =
     let req = Dyadic.shift ~prec:12 ~round:Dyadic.down Dyadic.one (-k) in
     if not (Dyadic.lt err req) then raise Run.NoPrecision
   in
+  let rec require_real_array = function
+    | Value.VReal r as v ->
+        require !Config.out_prec r;
+        v
+    | Value.VArray rs -> Value.VArray (Array.map require_real_array rs)
+    | v -> v
+  in
   let rec loop env =
     try
       match comp_ro_value env c with
       | Value.VReal r as v ->
           require !Config.out_prec r;
           Value.return v
-      | (Value.VUnit | Value.VBoolean _ | Value.VInteger _ | Value.VArray _) as
-        v ->
-          (* TODO: if we got an array of reals, should they all be sufficiently precise? *)
+      | Value.VArray rs as vs -> Value.return @@ require_real_array vs
+      | (Value.VUnit | Value.VBoolean _ | Value.VInteger _) as v ->
           Value.return v
     with Run.NoPrecision ->
       if !Config.verbose then

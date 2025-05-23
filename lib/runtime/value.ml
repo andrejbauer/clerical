@@ -67,8 +67,6 @@ let ro_as_value (RO v) = v
     computation.*)
 let ro_as_rw (RO v) = RW v
 
-(* TODO: use formatting boxes to control line breaks better *)
-
 (** Print a value *)
 let rec print_value v ppf =
   match v with
@@ -80,6 +78,8 @@ let rec print_value v ppf =
 
 and print_array vs ppf =
   let last = Array.length vs - 1 in
+  (* TODO: use formatting boxes to control line breaks better globally *)
+  Format.pp_open_box ppf 120;
   Array.iteri
     (fun i v ->
       if i < last then Format.fprintf ppf "%t,@ " (print_value v)

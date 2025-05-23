@@ -25,6 +25,8 @@ type runtime_error =
   | CannotWrite
   | InvalidFunction
   | InvalidCase
+  | IntegerOverflow
+  | ArrayError of string
   | InvalidExternal of string
   | UnknownExternal of string
   | InternalError of string
@@ -55,6 +57,8 @@ let rec print_error err ppf =
   | CannotWrite -> Format.fprintf ppf "cannot write into a read-only position"
   | InvalidFunction -> Format.fprintf ppf "invalid function application"
   | InvalidCase -> Format.fprintf ppf "invalid case statement"
+  | IntegerOverflow -> Format.fprintf ppf "integer overflow"
+  | ArrayError s -> Format.fprintf ppf "array error: (%s)" s
   | InvalidExternal s -> Format.fprintf ppf "invalid application of %s" s
   | UnknownExternal s -> Format.fprintf ppf "unknown external function %s" s
   | InternalError s -> Format.fprintf ppf "internal error (%s)" s
