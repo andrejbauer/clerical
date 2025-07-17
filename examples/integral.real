@@ -1,0 +1,85 @@
+function prec(int x):
+  1.0 /. real(shift(1, x))
+
+function abs(real x):
+  lim n =>
+    case
+      x <. prec (n + 1) => real (0) -. x
+    | x >. real (0) -. prec (n + 1) => x
+    end
+
+function bound(real x, real d):
+  case
+    abs(x) <. d => true
+  | abs(x) >. d /. real(2) => false
+  end
+
+function nbound(real x, real d):
+  if bound(x, d) then false else true end
+
+
+
+function sin (real x):
+  lim p =>
+    var epsilon := prec(p)
+    and m := 0
+    and s := real(1)
+    and A := real(0)
+    and q := x in
+    while nbound (q, epsilon)
+    do
+      m := m + 1;
+      A := A +. q *. s;
+      s := s *. real(-1);
+      q := q *. x *. x /. real(2 * m + 1) /. real(2 * m)
+    end; A
+
+function pow(real x, int n):
+  var p := 1.0 and
+  i := 0 in
+  while i < n do
+    p := p *. x;
+    i := i + 1
+  end;
+  p
+
+function e (real x):
+  lim n =>
+    let err = shift(1, n + 1) in
+    var i := 1
+    and e := 0.0
+    and f := 1 in
+    while f <= err do
+      e := e +. pow(x, i - 1) /. real(f) ;
+      f := f * i ;
+      i := i + 1
+    end ;
+    e
+
+function integral ():
+  lim n =>
+    var a := real(0)
+    and b := real(1)
+    and integral := real(0)
+    and i := 0.0
+    and prec := real(shift(1, n)) in
+    let rn = real(n) in
+    (* TODO: partition to 2^n instead of n *)
+    while int(i) < n
+    do
+      integral := integral +. e((i +. 0.5) /. rn );
+      i := i +. 1.0
+    end; integral /. rn
+
+
+function sum ():
+  var a := real(2000)
+  and n := 30000
+  and b := 0
+  and s := real(0) in
+  while b < n
+  do
+    s := s +. a;
+    a := a;
+    b := b + 1
+  end; s
