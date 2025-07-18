@@ -93,7 +93,42 @@ function integral ():
       counter := counter + 1
     end; integral /. rn
 
+function square(real x, real c):
+  x *. x -. c
+
+(* Find a zero of f on interval [a,b], assuming f is negative at a,
+   positive at b, and monotone.
+
+   Points of interest: 
+   1. We compute an *exact* solution.
+   2. We use trisection (not bisection) so that we never get stuck.
+      (We could get stuck with bijection if the mid-point accidentally hits zero.
+*)
+
+function sqrt_trisect(real a, real b, real c):
+  lim n =>
+     (* We need to produce a real within 2⁻ⁿ of the zero. *)
+     let ε = 1.0 /. real(shift(1, n)) in  (* ε = 2⁻ⁿ *)
+     var left := a in
+     var right := b in
+     var must_go_on := true in
+       while must_go_on do
+          let x = (2.0 *. left +. right) /. 3.0
+          and y = (left +. 2.0 *. right) /. 3.0 in
+          let u = square(x, c) and v = square(y, c) in
+          case
+          | square(x, c) <. 0.0 => left := x
+          | square(y, c) >. 0.0 => right := y
+          end ;
+          case
+          | right -. left <. ε        => must_go_on := false
+          | right -. left >. 0.5 *. ε => skip
+          end
+       end ;
+       (left +. right) *. 0.5
+
 function demo ():
-  plet i = integral ()
+  let i = integral ()
   and pi = pi () in
-  pi *. i
+  let s = sqrt_trisect(1.0, 3.0, 2.0 *. pi) in
+  s
