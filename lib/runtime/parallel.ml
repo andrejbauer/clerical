@@ -31,7 +31,7 @@ let toplevel ?domains task =
     | None -> Picos_domain.recommended_domain_count () - 1
     | Some k -> k
   in
-  try Picos_mux_multififo.run_on ~n_domains @@ task
+  try Picos_mux_multififo.run_on ~heartbeat_delay:0.05 ~n_domains @@ task
   with Picos_std_structured.Control.Terminate -> raise InvalidCase
 
 (** Map a function on a list in parallel *)
