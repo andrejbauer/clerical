@@ -48,8 +48,9 @@ function e (real x):
     let err = shift(1, n) in
     var i := 1
     and e := 0.0
-    and f := 1 in
-    while bound(real(f) /. pow(x, i - 1), real(err)) do
+    and f := 1
+    and rerr := real(err) in
+    while bound(real(f) /. pow(x, i - 1), rerr) do
     (*while real(f) /. pow(x, i - 1)<. real(err) do*)
       e := e +. pow(x, i - 1) /. real(f) ;
       f := f * i ;
@@ -76,63 +77,16 @@ function pi ():
       k := k + 1
     end; (a +. b) /. real(2)
 
-function integral ():
-  lim n =>
-    var a := real(0)
-    and b := real(1)
-    and integral := real(0)
-    and i := 0.0
-    and counter := 0
-    and prec := shift(1, n) in
-    let rn = real(n) in
-    (* TODO: partition to 2^n instead of n *)
-    while counter < n
-    do
-      integral := integral +. 1.0 /. e(pow((i +. 0.5)/.rn, 2) /. 2.0);
-      i := i +. 1.0;
-      counter := counter + 1
-    end; integral /. rn
 
 function square(real x, real c):
   x *. x -. c
-
-(* Find a zero of f on interval [a,b], assuming f is negative at a,
-   positive at b, and monotone.
-
-   Points of interest: 
-   1. We compute an *exact* solution.
-   2. We use trisection (not bisection) so that we never get stuck.
-      (We could get stuck with bijection if the mid-point accidentally hits zero.
-*)
-
-function sqrt_trisect(real a, real b, real c):
-  lim n =>
-     (* We need to produce a real within 2⁻ⁿ of the zero. *)
-     let ε = 1.0 /. real(shift(1, n)) in  (* ε = 2⁻ⁿ *)
-     var left := a in
-     var right := b in
-     var must_go_on := true in
-       while must_go_on do
-          let x = (2.0 *. left +. right) /. 3.0
-          and y = (left +. 2.0 *. right) /. 3.0 in
-          let u = square(x, c) and v = square(y, c) in
-          case
-          | square(x, c) <. 0.0 => left := x
-          | square(y, c) >. 0.0 => right := y
-          end ;
-          case
-          | right -. left <. ε        => must_go_on := false
-          | right -. left >. 0.5 *. ε => skip
-          end
-       end ;
-       (left +. right) *. 0.5
 
 function sqrt (real a, real b, real c):
   lim n =>
     var k := 0
     and a := a
     and b := b in
-    while k < n
+    while k < n * int(b -. a)
     do
       var x := (a +. b) /. real(2) in
       if
@@ -146,8 +100,27 @@ function sqrt (real a, real b, real c):
       k := k + 1
     end; (a +. b) /. real(2)
 
+function integral ():
+  lim n =>
+    let sem1 = sqrt(0.0, 1.0, e(-1.0)) in
+    var a := real(0)
+    and b := real(1)
+    and integral := real(0)
+    and i := 0.0
+    and counter := 0
+    (*and prec := shift(1, n) in*)
+    and prec := int(sem1 *. real(shift(1, n))) in
+    let rn = real(prec) in
+    (* TODO: partition to 2^n instead of n *)
+    while counter < prec
+    do
+      integral := integral +. 1.0 /. e(pow((i +. 0.5)/.rn, 2) /. 2.0);
+      i := i +. 1.0;
+      counter := counter + 1
+    end; integral /. rn
+
 function demo ():
-  let i = integral ()
+  plet i = integral ()
   and pi = pi () in
   let s = sqrt(1.0, 10.0, 2.0 *. pi) in
   i /. s
