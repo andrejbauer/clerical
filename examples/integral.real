@@ -85,16 +85,15 @@ function sqrt (real a, real b, real c):
   lim n =>
     var k := 0
     and a := a
+    and prec := prec(n)
     and b := b in
-    while k < n * int(b -. a)
+    while (b -. a) /. 3.0 >. prec
     do
-      var x := (a +. b) /. real(2) in
-      if
-        real (0) <. square (x, c)
-      then
-        b := x
-      else
-        a := x
+      var x := (2.0 *. a +. b) /. 3.0
+      and y := (a +. 2.0 *. b) /. 3.0 in
+      case
+        | real (0) <. square (y, c) => b := y
+        | real (0) >. square (x, c) => a := x
       end
       ;
       k := k + 1
@@ -119,8 +118,11 @@ function integral ():
       counter := counter + 1
     end; integral /. rn
 
+function sp ():
+  let pi = pi () in
+  sqrt(1.0, 10.0, 2.0 *. pi)
+
 function demo ():
   plet i = integral ()
-  and pi = pi () in
-  let s = sqrt(1.0, 10.0, 2.0 *. pi) in
+  and s = sp () in
   i /. s
