@@ -85,44 +85,42 @@ function sqrt (real a, real b, real c):
   lim n =>
     var k := 0
     and a := a
-    and prec := prec(n)
     and b := b in
-    while (b -. a) /. 3.0 >. prec
+    while k < n * int(b -. a)
     do
-      var x := (2.0 *. a +. b) /. 3.0
-      and y := (a +. 2.0 *. b) /. 3.0 in
-      case
-        | real (0) <. square (y, c) => b := y
-        | real (0) >. square (x, c) => a := x
+      var x := (a +. b) /. real(2) in
+      if
+        real (0) <. square (x, c)
+      then
+        b := x
+      else
+        a := x
       end
       ;
       k := k + 1
     end; (a +. b) /. real(2)
 
+function sum (int prec):
+  let rprec = real(prec) in
+  var a := (array [prec] i => let ri = real(i) in 1.0 /. e(((ri +. 0.5) *. (ri +. 0.5))/. rprec /. rprec /. 2.0))
+  and sum := 0.0
+  and i := 0 in
+  while i < prec do
+    sum := sum +. a[i];
+    i := i + 1
+  end;
+  sum /. real(prec)
+
 function integral ():
   lim n =>
-    let sem1 = sqrt(0.0, 1.0, e(-1.0)) in
     var a := real(0)
     and b := real(1)
-    and integral := real(0)
-    and i := 0.0
-    and counter := 0
-    (*and prec := shift(1, n) in*)
-    and prec := int(sem1 *. real(shift(1, n))) in
-    let rn = real(prec) in
-    (* TODO: partition to 2^n instead of n *)
-    while counter < prec
-    do
-      integral := integral +. 1.0 /. e(pow((i +. 0.5)/.rn, 2) /. 2.0);
-      i := i +. 1.0;
-      counter := counter + 1
-    end; integral /. rn
+    and prec := shift(1, n) in
+    sum(prec)
 
-function sp ():
-  let pi = pi () in
-  sqrt(1.0, 10.0, 2.0 *. pi)
 
 function demo ():
   plet i = integral ()
-  and s = sp () in
+  and pi = pi () in
+  let s = sqrt(1.0, 10.0, 2.0 *. pi) in
   i /. s

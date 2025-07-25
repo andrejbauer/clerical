@@ -49,3 +49,18 @@ let map f xs =
   (* Tell all the promises to go away. *)
   List.iter (fun p -> Picos_std_structured.Promise.terminate p) ps;
   ys
+
+let array_map f xs =
+  Picos_std_structured.Bundle.join_after ~on_return:`Terminate @@ fun bundle ->
+  (* Create a list of promises that immediately start running *)
+  let ps =
+    Array.map
+      (fun x ->
+        Picos_std_structured.Bundle.fork_as_promise bundle (fun () -> f x))
+      xs
+  in
+  (* Await them all and return the results *)
+  let ys = Array.map Picos_std_structured.Promise.await ps in
+  (* Tell all the promises to go away. *)
+  Array.iter (fun p -> Picos_std_structured.Promise.terminate p) ps;
+  ys
