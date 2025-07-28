@@ -3,6 +3,7 @@
 %}
 
 (* Infix operations a la OCaml *)
+%token OROR ANDAND
 %token <Util.Name.ident * Util.Location.t> PREFIXOP INFIXOP0 INFIXOP1 INFIXOP2 INFIXOP3 INFIXOP4
 
 (* Names and constants *)
@@ -45,7 +46,7 @@
 %nonassoc DARROW
 %nonassoc IN
 %right    SEMICOLON
-%left     INFIXOP0
+%left     ANDAND OROR INFIXOP0
 %right    INFIXOP1
 %left     INFIXOP2
 %left     INFIXOP3
@@ -104,7 +105,12 @@ plain_term:
 
 op_term: mark_location(plain_op_term) { $1 }
 plain_op_term:
-  | e=plain_prefix_term                            { e }
+  | e=plain_prefix_term
+    { e }
+  | e1=op_term ANDAND e2=op_term
+    { And (e1, e2) }
+  | e1=op_term OROR e2=op_term
+    { Or (e1, e2) }
   | e2=op_term oploc=infix e3=op_term
     { let (op, loc) = oploc in
       Apply (op, [e2; e3])

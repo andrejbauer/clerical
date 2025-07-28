@@ -26,10 +26,6 @@ external shift : (int, int) -> int = "shift"
 
 external ( ! ) : (bool) -> bool = "not"
 
-(* Warning: these are *not* short-circuit, for those we need language support. *)
-external ( && ) : (bool, bool) -> bool = "&&"
-external ( || ) : (bool, bool) -> bool = "||"
-
 (* Conversion *)
 
 external real : (int) -> real = "real"

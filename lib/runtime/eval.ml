@@ -124,6 +124,24 @@ let rec comp ~prec stack { Location.data = c; Location.loc } :
       let ru = Dyadic.of_string ~prec:prec_mpfr ~round:Dyadic.up s in
       let r = Real.make rl ru in
       (stack, Value.(return (VReal r)))
+  | Syntax.And (e1, e2) ->
+    begin
+      match comp_ro_boolean ~loc ~prec stack e1 with
+      | false ->
+        (stack, Value.(return (VBoolean false)))
+      | true ->
+        let b = comp_ro_boolean ~loc ~prec stack e2 in
+        (stack, Value.(return (VBoolean b)))
+    end
+  | Syntax.Or (e1, e2) ->
+    begin
+      match comp_ro_boolean ~loc ~prec stack e1 with
+      | true ->
+        (stack, Value.(return (VBoolean true)))
+      | false ->
+        let b = comp_ro_boolean ~loc ~prec stack e2 in
+        (stack, Value.(return (VBoolean b)))
+    end
   | Syntax.Apply (k, es) -> (
       match lookup_fun k stack with
       | None -> Run.error ~loc Run.InvalidFunction

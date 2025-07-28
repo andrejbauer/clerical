@@ -13,6 +13,8 @@ and comp' =
   | Boolean of bool
   | Integer of Mpzf.t
   | Float of string
+  | And of comp * comp
+  | Or of comp * comp
   | Apply of index * comp list
   | Skip
   | Sequence of comp * comp

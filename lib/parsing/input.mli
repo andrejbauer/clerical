@@ -11,6 +11,8 @@ and comp' =
   | Boolean of bool
   | Integer of Mpzf.t
   | Float of string (* store the string so we can correctly round later *)
+  | And of comp * comp
+  | Or of comp * comp
   | Apply of operator * comp list
   | Skip
   | Sequence of comp * comp

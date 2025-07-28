@@ -101,6 +101,14 @@ let rec comp ctx { Location.data = c; loc } =
   | Syntax.Boolean _ -> Type.(Cmd Boolean)
   | Syntax.Integer _ -> Type.(Cmd Integer)
   | Syntax.Float _ -> Type.(Cmd Real)
+  | Syntax.And (c1, c2) ->
+    check_expr ctx Type.Boolean c1 ;
+    check_expr ctx Type.Boolean c2 ;
+    Type.(Cmd Boolean)
+  | Syntax.Or (c1, c2) ->
+    check_expr ctx Type.Boolean c1 ;
+    check_expr ctx Type.Boolean c2 ;
+    Type.(Cmd Boolean)
   | Syntax.Apply (k, args) ->
       let t_args, t_ret = lookup_fun k ctx in
       check_args ~loc ctx t_args args;

@@ -145,6 +145,12 @@ and token_aux ({ Ulexbuf.stream; _ } as lexbuf) =
   | prefixop ->
       f ();
       PREFIXOP (Ulexbuf.lexeme lexbuf, loc_of lexbuf)
+  | "&&" -> (* must come before infixop0 *)
+     f ();
+     ANDAND
+  | "||" -> (* must come before infixop0 *)
+     f ();
+     OROR
   | infixop0 ->
       f ();
       INFIXOP0 (Ulexbuf.lexeme lexbuf, loc_of lexbuf)

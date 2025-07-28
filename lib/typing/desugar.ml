@@ -72,9 +72,23 @@ let rec comp ctx { Location.data = c; Location.loc } =
         match index x ctx with
         | None -> error ~loc (UnknownIdentifier x)
         | Some k -> Syntax.Var k)
+
     | Input.Boolean b -> Syntax.Boolean b
+
     | Input.Integer k -> Syntax.Integer k
+
     | Input.Float x -> Syntax.Float x
+
+    | Input.And (c1, c2) ->
+      let c1 = comp ctx c1
+      and c2 = comp ctx c2 in
+      Syntax.And (c1, c2)
+
+    | Input.Or (c1, c2) ->
+      let c1 = comp ctx c1
+      and c2 = comp ctx c2 in
+      Syntax.Or (c1, c2)
+
     | Input.Apply (f, es) -> (
         match index_fun f ctx with
         | None -> error ~loc (UnknownFunction f)
