@@ -247,33 +247,31 @@ let rec comp env { Location.data = c; Location.loc } :
         Array.of_list
         @@ List.mapi
              (fun i e ->
-               let stack =
-                 push_ro "_i" (Value.VInteger (Mpzf.of_int i)) stack
-               in
-               comp_ro_value ~prec stack e)
+               let env = push_ro "_i" (Value.VInteger (Mpzf.of_int i)) env in
+               comp_ro_value env e)
              es
       in
-      (stack, Value.(return (VArray vs)))
+      (env, Value.(return (VArray vs)))
   | Syntax.ArrayInit (e1, x, e2) ->
-      let n = comp_ro_int ~loc ~prec stack e1 in
+      let n = comp_ro_int ~loc env e1 in
       let vs =
         Array.init n (fun i ->
-            let stack = push_ro x (Value.VInteger (Mpzf.of_int i)) stack in
-            comp_ro_value ~prec stack e2)
+            let env = push_ro x (Value.VInteger (Mpzf.of_int i)) env in
+            comp_ro_value env e2)
       in
-      (stack, Value.(return (VArray vs)))
+      (env, Value.(return (VArray vs)))
   | Syntax.ArrayIndex (e1, e2) -> (
-      let vs = comp_ro_array ~loc ~prec stack e1 in
+      let vs = comp_ro_array ~loc env e1 in
       (* Index could be out of bounds, report error *)
       try
-        let i = comp_ro_int ~loc ~prec stack e2 in
+        let i = comp_ro_int ~loc env e2 in
         let v = vs.(i) in
-        (stack, Value.(return v))
+        (env, Value.(return v))
       with Invalid_argument e -> Run.error ~loc @@ Run.ArrayError e)
   | Syntax.ArrayLen e ->
-      let vs = comp_ro_array ~loc ~prec stack e in
+      let vs = comp_ro_array ~loc env e in
       let n = Array.length vs in
-      (stack, Value.(return (Value.VInteger (Mpzf.of_int n))))
+      (env, Value.(return (Value.VInteger (Mpzf.of_int n))))
 
 (** Compute a read-only computation. *)
 and comp_ro env c : Value.result_ro =
@@ -290,12 +288,11 @@ and comp_ro_boolean ~loc env c = as_boolean ~loc:c.Location.loc (comp_ro env c)
 and comp_ro_real ~loc env c = as_real ~loc:c.Location.loc (comp_ro env c)
 
 (** Compute a read-only computation and extract its value as an array. *)
-and comp_ro_array ~loc ~prec stack c =
-  as_array ~loc:c.Location.loc (comp_ro ~prec stack c)
+and comp_ro_array ~loc env c = as_array ~loc:c.Location.loc (comp_ro env c)
 
 (** Compute a read-only computation and extract its value as an int. *)
-and comp_ro_int ~loc ~prec stack c =
-  let v = as_integer ~loc:c.Location.loc (comp_ro ~prec stack c) in
+and comp_ro_int ~loc env c =
+  let v = as_integer ~loc:c.Location.loc (comp_ro env c) in
   if Mpz.fits_int_p @@ v then Mpz.get_int v
   else Run.error ~loc Run.IntegerOverflow
 
