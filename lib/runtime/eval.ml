@@ -256,8 +256,8 @@ let rec comp env { Location.data = c; Location.loc } :
       let n = comp_ro_int ~loc env e1 in
       let vs =
         Parallel.array_map (fun i ->
-            let stack = push_ro x (Value.VInteger (Mpzf.of_int i)) stack in
-            comp_ro_value ~prec stack e2)
+            let env = push_ro x (Value.VInteger (Mpzf.of_int i)) env in
+            comp_ro_value env e2)
         @@ Array.init n (fun i -> i)
       in
       (env, Value.(return (VArray vs)))
