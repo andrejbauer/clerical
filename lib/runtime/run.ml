@@ -83,15 +83,33 @@ let initial_prec () =
 
 let print_prec { prec_mpfr = k; _ } ppf = Format.fprintf ppf "(mpfr=%d)" k
 
+(** A Clerical function *)
+type func = loc:Location.t -> topenv -> Value.value list -> Value.result_ro
+
+(** The top-level environment, currently it holds just function definitions *)
+and topenv = {
+  prec : precision ;
+  funs : func list ;
+}
+
+(** The top frame is the one that we can write into, all the other frames are read-only. *)
 type stack = {
   frame : (Name.ident * entry) list; (* read-write *)
   frames : (Name.ident * entry) list list; (* read-only *)
-  funs :
-    (loc:Location.t -> prec:precision -> Value.value list -> Value.result_ro)
-    list;
 }
-(** The top frame is the one that we can write into, all the other frames are
-    read-only. *)
+
+type runtime = {
+  topenv : topenv ;
+  stack : stack
+}
+
+(** Initial toplevel *)
+let initial_topenv = { prec = initial_prec () ; funs = [] }
 
 (** Initial stack *)
-let initial = { frame = []; frames = []; funs = [] }
+let initial_stack = { frame = []; frames = [] }
+
+let initial_runtime = { topenv = initial_topenv ; stack = initial_stack }
+
+let get_prec {topenv={prec;_};_} = prec
+let get_stack {stack;_} = stack

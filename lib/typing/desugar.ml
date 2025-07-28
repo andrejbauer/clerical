@@ -33,7 +33,7 @@ let add_args xts ctx =
   List.fold_left (fun ctx (x, _) -> add_ident x ctx) ctx xts
 
 (** Add a new function name to the context. *)
-let add_fun f { idents; funs } = { idents; funs = f :: funs }
+let add_fun f { idents; funs } = { idents; funs = funs @ [f] }
 
 (** Find the de Bruijn index of [x] in the context [ctx]. *)
 let index x { idents; _ } =
@@ -180,12 +180,13 @@ let rec toplevel ctx { Location.data = c; Location.loc } =
     | Input.TopTime c ->
         let c = comp ctx c in
         (ctx, Syntax.TopTime c)
-    | Input.TopFunction (ret_ty, f, xts, c) ->
-        let ret_ty = valty ret_ty in
-        let c = comp (add_args xts ctx) c
+    | Input.TopFunction (t, f, xts, c) ->
+        let t = valty t in
+        let ctx_f = add_fun f ctx in
+        let ctx_c = add_args xts ctx_f in
+        let c = comp ctx_c c
         and xts = List.map (fun (x, t) -> (x, valty t)) xts in
-        let ctx = add_fun f ctx in
-        (ctx, Syntax.TopFunction (ret_ty, f, xts, c))
+        (ctx_f, Syntax.TopFunction (t, f, xts, c))
     | Input.TopExternal (f, s, ft) ->
         let ctx = add_fun f ctx in
         let ft = funty ft in

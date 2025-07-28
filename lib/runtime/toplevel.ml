@@ -4,7 +4,7 @@ module Typecheck = Typing.Typecheck
 type state = {
   desugar : Desugar.context;
   typecheck : Typecheck.context;
-  runtime : Run.stack;
+  runtime : Run.runtime;
 }
 (** A toplevel computation carries around the current environment. *)
 
@@ -12,7 +12,7 @@ let initial =
   {
     desugar = Desugar.initial;
     typecheck = Typecheck.initial;
-    runtime = Run.initial;
+    runtime = Run.initial_runtime;
   }
 
 let exec_interactive { desugar; typecheck; runtime } =

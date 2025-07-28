@@ -24,7 +24,7 @@ let push_rw dt ctx = { ctx with frame = RW dt :: ctx.frame }
 let push_ro dt ctx = { ctx with frame = RO dt :: ctx.frame }
 
 (** Define a new function. *)
-let push_fun ft ctx = { ctx with funs = ft :: ctx.funs }
+let push_fun ft ctx = { ctx with funs = ctx.funs @ [ft]  }
 
 let push_args xts ctx =
   List.fold_left (fun ctx (_, dt) -> push_ro dt ctx) (make_ro ctx) xts
@@ -213,12 +213,13 @@ let rec toplevel ctx { Location.data = tc; loc } =
     | Syntax.TopTime c ->
         let t = comp ctx c in
         (ctx, Syntax.TyTopTime (c, t))
-    | Syntax.TopFunction (ret_ty, f, xts, c) ->
-        let t = Type.Cmd ret_ty in
-        check_comp (push_args xts ctx) t c ;
+    | Syntax.TopFunction (t, f, xts, c) ->
+        let t = Type.Cmd t in
         let ft = (List.map snd xts, t) in
-        let ctx = push_fun ft ctx in
-        (ctx, Syntax.TyTopFunction (f, xts, c, t))
+        let ctx_f = push_fun ft ctx in
+        let ctx_c = push_args xts ctx_f in
+        check_comp ctx_c t c ;
+        (ctx_f, Syntax.TyTopFunction (f, xts, c, t))
     | Syntax.TopExternal (f, s, ft) ->
         let ctx = push_fun ft ctx in
         (ctx, Syntax.TyTopExternal (f, s, ft))

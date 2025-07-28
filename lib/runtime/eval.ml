@@ -4,41 +4,40 @@ module Type = Typing.Type
 module Dyadic = Reals.Dyadic
 module Real = Reals.Real
 
+(** Increase working precision *)
+let next_prec ~loc (Run.{topenv={prec;_} as tenv;_} as env) =
+  let prec = Run.next_prec ~loc prec in
+  Run.{ env with topenv = { tenv with prec }}
+
 (** Make the stack read-only by pushing a new empty top frame onto it, and
     converting the read-write entries to read-only entries. *)
-let make_ro Run.{ frame; frames; funs } =
-  Run.{ frame = []; frames = frame :: frames; funs }
+let make_ro env =
+  let Run.{stack={frame; frames};_} = env in
+  Run.{env with stack = {frame = []; frames = frame :: frames}}
 
 (** Push a read-write value onto the top frame. *)
-let push_rw x v st = Run.{ st with frame = (x, RW (ref v)) :: st.frame }
+let push_rw x v (Run.{stack=st;_} as env) =
+  Run.{ env with stack = {st with frame = (x, RW (ref v)) :: st.frame }}
 
 (** Push a read-only value onto the top frame. *)
-let push_ro x v st = Run.{ st with frame = (x, RO v) :: st.frame }
+let push_ro x v (Run.{stack=st;_} as env) =
+  Run.{ env with stack = {st with frame = (x, RO v) :: st.frame }}
 
 (** Define a new function. *)
-let push_fun f stack = Run.{ stack with funs = f :: stack.funs }
+let push_fun f (Run.{topenv;_} as env) =
+  Run.{ env with topenv = {topenv with funs = topenv.funs @ [f]}}
 
 (** Push many read-write values *)
-let push_rws xvs st = List.fold_left (fun st (x, v) -> push_rw x v st) st xvs
+let push_rws xvs env = List.fold_left (fun env (x, v) -> push_rw x v env) env xvs
 
 (** Push many read-only values *)
-let push_ros xvs st = List.fold_left (fun st (x, v) -> push_ro x v st) st xvs
+let push_ros xvs env = List.fold_left (fun env (x, v) -> push_ro x v env) env xvs
 
 (** Push many read-only values *)
-let push_ros' xs vs st = List.fold_left2 (fun st x v -> push_ro x v st) st xs vs
-
-(** Pop values from stack *)
-let pop stack k =
-  let rec remove k lst =
-    match (k, lst) with
-    | 0, lst -> lst
-    | k, _ :: lst -> remove (k - 1) lst
-    | _, [] -> Run.error ~loc:Location.nowhere (Run.InternalError "pop")
-  in
-  Run.{ stack with frame = remove k stack.frame }
+let push_ros' xs vs env = List.fold_left2 (fun env x v -> push_ro x v env) env xs vs
 
 (** Lookup a value on the stack *)
-let lookup_val k Run.{ frame; frames; _ } =
+let lookup_val k Run.{stack={frame; frames};_} =
   let rec lookup k vs vss =
     match (k, vs, vss) with
     | 0, (_, Run.RO v) :: _, _ -> Some v
@@ -50,7 +49,7 @@ let lookup_val k Run.{ frame; frames; _ } =
   lookup k frame frames
 
 (** Lookup a reference to a read-write value on the stack *)
-let lookup_ref k Run.{ frame; _ } =
+let lookup_ref k Run.{stack={frame; _};_} =
   let rec lookup k vs =
     match (k, vs) with
     | 0, (_, Run.RO v) :: _ -> None
@@ -61,7 +60,7 @@ let lookup_ref k Run.{ frame; _ } =
   lookup k frame
 
 (** Lookup a function definition *)
-let lookup_fun k Run.{ funs; _ } =
+let lookup_fun k Run.{topenv={funs; _};_} =
   let rec lookup k fs =
     match (k, fs) with
     | _, [] -> None
@@ -71,7 +70,7 @@ let lookup_fun k Run.{ funs; _ } =
   lookup k funs
 
 (** Print trace *)
-let print_trace ~loc ~prec Run.{ frame; frames; _ } =
+let print_trace ~loc Run.{stack={frame; frames}; topenv={prec;_}} =
   let xvs = frame @ List.flatten frames in
   Print.message ~loc "Trace" "\tprecision: %t@\n\t%t@." (Run.print_prec prec)
     (fun ppf ->
@@ -108,113 +107,114 @@ let as_value ~loc v = Value.ro_as_value v
 
 (** [comp ~prec n stack c] evaluates computation [c] in the given [stack] at
     precision level [n], and returns the new stack and the computed value. *)
-let rec comp ~prec stack { Location.data = c; Location.loc } :
-    Run.stack * Value.result =
-  if !Config.trace then print_trace ~loc ~prec stack;
-  let { Run.prec_mpfr; _ } = prec in
+let rec comp env { Location.data = c; Location.loc } :
+    Run.runtime * Value.result =
+  if !Config.trace then print_trace ~loc env;
   match c with
   | Syntax.Var k -> (
-      match lookup_val k stack with
+      match lookup_val k env with
       | None -> Run.error ~loc Run.OutOfStack
-      | Some v -> (stack, Value.return v))
-  | Syntax.Boolean b -> (stack, Value.(return (VBoolean b)))
-  | Syntax.Integer k -> (stack, Value.(return (VInteger k)))
+      | Some v -> (env, Value.return v))
+  | Syntax.Boolean b -> (env, Value.(return (VBoolean b)))
+  | Syntax.Integer k -> (env, Value.(return (VInteger k)))
   | Syntax.Float s ->
+    let Run.{topenv={prec={prec_mpfr;_}; _};_} = env in
       let rl = Dyadic.of_string ~prec:prec_mpfr ~round:Dyadic.down s in
       let ru = Dyadic.of_string ~prec:prec_mpfr ~round:Dyadic.up s in
       let r = Real.make rl ru in
-      (stack, Value.(return (VReal r)))
+      (env, Value.(return (VReal r)))
   | Syntax.And (e1, e2) ->
     begin
-      match comp_ro_boolean ~loc ~prec stack e1 with
+      match comp_ro_boolean ~loc env e1 with
       | false ->
-        (stack, Value.(return (VBoolean false)))
+        (env, Value.(return (VBoolean false)))
       | true ->
-        let b = comp_ro_boolean ~loc ~prec stack e2 in
-        (stack, Value.(return (VBoolean b)))
+        let b = comp_ro_boolean ~loc env e2 in
+        (env, Value.(return (VBoolean b)))
     end
   | Syntax.Or (e1, e2) ->
     begin
-      match comp_ro_boolean ~loc ~prec stack e1 with
+      match comp_ro_boolean ~loc env e1 with
       | true ->
-        (stack, Value.(return (VBoolean true)))
+        (env, Value.(return (VBoolean true)))
       | false ->
-        let b = comp_ro_boolean ~loc ~prec stack e2 in
-        (stack, Value.(return (VBoolean b)))
+        let b = comp_ro_boolean ~loc env e2 in
+        (env, Value.(return (VBoolean b)))
     end
   | Syntax.Apply (k, es) -> (
-      match lookup_fun k stack with
+      match lookup_fun k env with
       | None -> Run.error ~loc Run.InvalidFunction
       | Some f ->
-          let vs = List.map (fun e -> comp_ro_value ~prec stack e) es in
-          let p = f ~loc ~prec vs in
-          let r = Value.ro_as_rw p in
-          (stack, r))
-  | Syntax.Skip -> (stack, Value.(return VUnit))
+        let vs = List.map (fun e -> comp_ro_value env e) es in
+        let p = f ~loc env.Run.topenv vs in
+        let r = Value.ro_as_rw p in
+        (env, r))
+  | Syntax.Skip -> (env, Value.(return VUnit))
   | Syntax.Trace ->
-      print_trace ~loc ~prec stack;
-      (stack, Value.(return VUnit))
+      print_trace ~loc env;
+      (env, Value.(return VUnit))
   | Syntax.Sequence (c1, c2) ->
-      let stack, r1 = comp ~prec stack c1 in
+      let stack, r1 = comp env c1 in
       let () = as_unit ~loc:c1.Location.loc r1 in
-      comp ~prec stack c2
+      comp env c2
   | Syntax.If (b, c1, c2) -> (
-      match comp_ro_boolean ~loc ~prec stack b with
-      | true -> comp ~prec stack c1
-      | false -> comp ~prec stack c2)
-  | Syntax.Case cases -> comp_case ~loc ~prec stack cases
+      match comp_ro_boolean ~loc env b with
+      | true -> comp env c1
+      | false -> comp env c2)
+  | Syntax.Case cases -> comp_case ~loc env cases
   | Syntax.While (b, c) ->
       let granularity = 1000 in
-      let rec loop k stack =
+      let rec loop k env =
         if k = 0 then Parallel.yield ();
-        match comp_ro_boolean ~loc:b.Location.loc ~prec stack b with
-        | false -> (stack, Value.(return VUnit))
+        match comp_ro_boolean ~loc:b.Location.loc env b with
+        | false -> (env, Value.(return VUnit))
         | true ->
-            let stack, v = comp ~prec stack c in
+            let env, v = comp env c in
             let () = as_unit ~loc:c.Location.loc v in
-            loop ((k + 1) mod granularity) stack
+            loop ((k + 1) mod granularity) env
       in
-      loop 1 stack
+      loop 1 env
   | Syntax.Newvar (xes, c) ->
-      let xvs = List.map (fun (x, e) -> (x, comp_ro_value ~prec stack e)) xes in
-      let stack' = push_rws xvs stack in
-      let _, v = comp ~prec stack' c in
-      (stack, v)
+      let xvs = List.map (fun (x, e) -> (x, comp_ro_value env e)) xes in
+      let env' = push_rws xvs env in
+      let _, v = comp env' c in
+      (env, v)
   | Syntax.Let (xes, c) ->
-      let xvs = List.map (fun (x, e) -> (x, comp_ro_value ~prec stack e)) xes in
-      let stack' = push_ros xvs stack in
-      let _, v = comp ~prec stack' c in
-      (stack, v)
+      let xvs = List.map (fun (x, e) -> (x, comp_ro_value env e)) xes in
+      let env' = push_ros xvs env in
+      let _, v = comp env' c in
+      (env, v)
   | Syntax.PNewvar (xes, c) ->
       let xvs =
-        Parallel.map (fun (x, e) -> (x, comp_ro_value ~prec stack e)) xes
+        Parallel.map (fun (x, e) -> (x, comp_ro_value env e)) xes
       in
-      let stack' = push_rws xvs stack in
-      let _, v = comp ~prec stack' c in
-      (stack, v)
+      let env' = push_rws xvs env in
+      let _, v = comp env' c in
+      (env, v)
   | Syntax.PLet (xes, c) ->
       let xvs =
-        Parallel.map (fun (x, e) -> (x, comp_ro_value ~prec stack e)) xes
+        Parallel.map (fun (x, e) -> (x, comp_ro_value env e)) xes
       in
-      let stack' = push_ros xvs stack in
-      let _, v = comp ~prec stack' c in
-      (stack, v)
+      let env' = push_ros xvs env in
+      let _, v = comp env' c in
+      (env, v)
   | Syntax.Assign (k, e) -> (
-      match lookup_ref k stack with
+      match lookup_ref k env with
       | None -> Run.error ~loc Run.CannotWrite
       | Some r ->
-          let v = comp_ro_value ~prec stack e in
+          let v = comp_ro_value env e in
           r := v;
-          (stack, Value.(return VUnit)))
+          (env, Value.(return VUnit)))
   | Syntax.Lim (x, e) -> (
       (* when computing at precision n we first try to compute the n-th term
         of the limit, and use that as the approximate result. If the computation
         fails we fall back to computing successively the 1st, 2nd, ... term of
         the limit, and take the last one that doesn't fail.
      *)
+      let Run.{topenv={prec={prec_mpfr;_}; _};_} = env in
       let try_lim n =
-        let stack' = push_ro x (Value.VInteger (Mpzf.of_int n)) stack in
-        let r = comp_ro_real ~loc:e.Location.loc ~prec stack' e in
+        let env' = push_ro x (Value.VInteger (Mpzf.of_int n)) env in
+        let r = comp_ro_real ~loc:e.Location.loc env' e in
         let err =
           Dyadic.shift ~prec:prec_mpfr ~round:Dyadic.up Dyadic.one (-n)
         in
@@ -224,7 +224,7 @@ let rec comp ~prec stack { Location.data = c; Location.loc } :
           Dyadic.add ~prec:prec_mpfr ~round:Dyadic.up (Real.upper r) err
         in
         let r = Real.make rl ru in
-        (stack, Value.(return (VReal r)))
+        (env, Value.(return (VReal r)))
       in
       try
         (* If we succeed with current precision then we return *)
@@ -245,39 +245,39 @@ let rec comp ~prec stack { Location.data = c; Location.loc } :
         loop 1 poorest)
 
 (** Compute a read-only computation. *)
-and comp_ro ~prec stack c : Value.result_ro =
-  let _, Value.RW v = comp ~prec (make_ro stack) c in
+and comp_ro env c : Value.result_ro =
+  let _, Value.RW v = comp (make_ro env) c in
   Value.RO v
 
 (** Compute a read-only computation and extract its value. *)
-and comp_ro_value ~prec stack c =
-  as_value ~loc:c.Location.loc (comp_ro ~prec stack c)
+and comp_ro_value env c =
+  as_value ~loc:c.Location.loc (comp_ro env c)
 
 (** Compute a read-only computation and extract its value as a boolean. *)
-and comp_ro_boolean ~loc ~prec stack c =
-  as_boolean ~loc:c.Location.loc (comp_ro ~prec stack c)
+and comp_ro_boolean ~loc env c =
+  as_boolean ~loc:c.Location.loc (comp_ro env c)
 
 (** Compute a read-only computation and extract its value as a real. *)
-and comp_ro_real ~loc ~prec stack c =
-  as_real ~loc:c.Location.loc (comp_ro ~prec stack c)
+and comp_ro_real ~loc env c =
+  as_real ~loc:c.Location.loc (comp_ro env c)
 
 (* Evaluate a case statement using parallel threads. *)
-and comp_case ~loc ~prec stack cases =
-  let rec make_guard ~prec b =
+and comp_case ~loc env cases =
+  let rec make_guard env b =
     let loc = b.Location.loc in
     fun () ->
-      try as_boolean ~loc (comp_ro ~prec stack b)
+      try as_boolean ~loc (comp_ro env b)
       with Run.NoPrecision ->
         Parallel.yield ();
-        let prec = Run.next_prec ~loc prec in
-        make_guard ~prec b ()
+        let env = next_prec ~loc env in
+        make_guard env b ()
   in
   let c =
-    Parallel.run_guards (List.map (fun (b, c) -> (make_guard ~prec b, c)) cases)
+    Parallel.run_guards (List.map (fun (b, c) -> (make_guard env b, c)) cases)
   in
-  comp ~prec stack c
+  comp env c
 
-let topcomp ~max_prec stack ({ Location.loc; _ } as c) =
+let topcomp ~max_prec env ({ Location.loc; _ } as c) =
   let require k r =
     let err =
       Dyadic.sub ~prec:12 ~round:Dyadic.up (Real.upper r) (Real.lower r)
@@ -285,9 +285,9 @@ let topcomp ~max_prec stack ({ Location.loc; _ } as c) =
     let req = Dyadic.shift ~prec:12 ~round:Dyadic.down Dyadic.one (-k) in
     if not (Dyadic.lt err req) then raise Run.NoPrecision
   in
-  let rec loop prec =
+  let rec loop env =
     try
-      match comp_ro_value ~prec stack c with
+      match comp_ro_value env c with
       | Value.VReal r as v ->
           require !Config.out_prec r;
           Value.return v
@@ -295,37 +295,37 @@ let topcomp ~max_prec stack ({ Location.loc; _ } as c) =
           Value.return v
     with Run.NoPrecision ->
       if !Config.verbose then
-        Print.message ~loc "Runtime" "Loss of precision at %t"
-          (Run.print_prec prec);
-      let prec = Run.next_prec ~loc prec in
-      loop prec
+        Print.message ~loc "Runtime" "Loss of precision at %t" (Run.print_prec (Run.get_prec env));
+      let env = next_prec ~loc env in
+      loop env
   in
-  let prec = Run.initial_prec () in
-  try Parallel.toplevel ?domains:!Config.domains @@ fun () -> loop prec
+  try Parallel.toplevel ?domains:!Config.domains @@ fun () -> loop env
   with Parallel.InvalidCase -> Run.(error ~loc InvalidCase)
 
-let topfun stack xs c =
-  let g ~loc ~prec vs =
-    let stack = push_ros' xs vs stack in
-    try comp_ro ~prec stack c
+let topfun env xs c =
+  let g ~loc topenv vs =
+  let env = Run.{topenv ; stack = initial_stack} in
+    let env = push_ros' xs vs env in
+    try comp_ro env c
     with Run.Error Location.{ data = err; loc = loc' } ->
       raise (Run.Error (Location.locate ~loc:loc' (Run.CallTrace (loc, err))))
   in
-  push_fun g stack
+  push_fun g env
 
-let topexternal ~loc stack s =
+let topexternal ~loc env s =
   match External.lookup s with
   | None -> Run.(error ~loc (UnknownExternal s))
   | Some g ->
-      let h ~loc ~prec vs =
+      let h ~loc topenv vs =
+        let Run.{prec;_} = topenv in
         try g ~prec vs
         with Run.Error { Location.data = err; loc = loc' } ->
           raise
             (Run.Error (Location.locate ~loc:loc' (Run.CallTrace (loc, err))))
       in
-      push_fun h stack
+      push_fun h env
 
-let rec toplevel ~quiet runtime { Location.data = c; Location.loc } =
+let rec toplevel ~quiet runtime Location.{ data = c; loc } =
   match c with
   | Syntax.TyTopDo (c, Type.Cmd dt) ->
       let v = topcomp ~max_prec:!Config.max_prec runtime c in
