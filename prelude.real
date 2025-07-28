@@ -40,3 +40,6 @@ external ( *. ) : (real, real) -> real = "*."
 (* Real-valued comparisons *)
 external ( <. ) : (real, real) -> bool = "<."
 external ( >. ) : (real, real) -> bool = ">."
+
+(* Absolute value *)
+external abs : (real) -> real = "abs"
