@@ -1,5 +1,5 @@
 (* A naive power function which just iterates multiplication. *)
-function power(real x, int k):
+function real power(real x, int k):
    var i := 0
    and p := 1.0 in
      while i < k do

@@ -1,5 +1,5 @@
 (* Euler's number *)
-function e ():
+function real e ():
   lim n =>
     let err = shift(1, n) in
     var i := 1

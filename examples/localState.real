@@ -1,6 +1,6 @@
 (* Guards may access common read-only state and use local mutable state. *)
 
-function demo():
+function int demo():
   var n := 10000 in
   case
     | (var i := 0 in while i < n do i := i + 1 end ; true) => 23

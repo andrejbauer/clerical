@@ -1,6 +1,6 @@
 (* The ambivalent behavior of guarded cases. *)
 
-function guess(int x):
+function unit guess(int x):
   var y := 0 in
   var keep_going := true in
   while keep_going do
@@ -14,7 +14,7 @@ function guess(int x):
     end
   end
 
-function foo():
+function unit foo():
   var x := 0 in
   case 
   | true => x := 1
@@ -22,20 +22,20 @@ function foo():
   end ;
   while x == 1 do skip end
 
-function bar():
+function unit bar():
   var x := 0 in
   case 
   | true => while x == 1 do skip end
   | true => x := 1 ; while x == 1 do skip end
   end
 
-function baz():
+function unit baz():
   var x := (case true => 0 | true => 1 end) in
   while x == 0 do skip end  
 
-function amb():
+function int amb():
   var x := (case true => 0 | true => 1 end) in
   x
 
-function qux():
+function unit qux():
   while (case true => true | true => false end) do skip end

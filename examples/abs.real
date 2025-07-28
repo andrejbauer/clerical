@@ -1,5 +1,5 @@
-(* Absolute value *)
-function abs(real x):
+(* Absolute value. Note that we now have an efficient built-in abs *)
+function real real_abs(real x):
   lim n =>
     let epsilon = 1.0 /. real(shift(1, n+1)) in
     case

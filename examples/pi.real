@@ -1,32 +1,22 @@
 (* compute pi as the unique root of sine(x) contained in (3, 4)  *)
 
-function prec(int x):
+function real prec(int x):
   1.0 /. real(shift(1, x))
 
-function abs(real x):
-  lim n =>
-    case
-      x <. prec (n + 1) => real (0) -. x
-    | x >. real (0) -. prec (n + 1) => x
-    end
-
-function bound(real x, real d):
+function bool bound(real x, real d):
   case
     abs(x) <. d => true
   | abs(x) >. d /. real(2) => false
   end
 
-function nbound(real x, real d):
-  if bound(x, d) then false else true end
-
-function sin (real x):
+function real sin (real x):
   lim p =>
     var epsilon := prec(p)
     and m := 0
     and s := real(1)
     and A := real(0)
     and q := x in
-    while nbound (q, epsilon)
+    while ! bound (q, epsilon)
     do
       m := m + 1;
       A := A +. q *. s;
@@ -34,7 +24,7 @@ function sin (real x):
       q := q *. x *. x /. real(2 * m + 1) /. real(2 * m)
     end; A
 
-function pi ():
+function real pi ():
   lim n =>
     var k := 0
     and a := real(3)
