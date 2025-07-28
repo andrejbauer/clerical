@@ -10,11 +10,19 @@ let yield = Picos_std_structured.Control.yield
 (** Run guards in parallel and return the result of the first one that succeeds.
 *)
 let run_guards guards =
-  Picos_std_structured.Run.first_or_terminate
-  @@ List.map
-       (fun (g, v) () ->
+  (* It looks like here it may happen that serveral guards raise an exception
+     simultaneously and then Picos collects them all into a single exception that
+     carries the list of all exceptions that happened. We catch it and just
+     throw the first exception in the list. TODO: Is this a reasonable policy? *)
+  try
+    Picos_std_structured.Run.first_or_terminate
+    @@ List.map
+      (fun (g, v) () ->
          if g () then v else raise Picos_std_structured.Control.Terminate)
-       guards
+      guards
+  with
+  | Picos_std_structured.Control.Errors [(exn, _); _] -> raise exn
+  | Picos_std_structured.Control.Errors [] as exn -> raise exn
 
 (** Run a toplevel computation that sets up the domains. *)
 let toplevel ?domains task =
