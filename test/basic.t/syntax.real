@@ -1,5 +1,5 @@
 (* Test every construct. *)
-function f(int x, int y) : x + y
+function int f(int x, int y) : x + y
 do f(20, 22)
 (* External is tested by external.real *)
 do 1.0 /. (3.0 *. real(14))

@@ -180,11 +180,12 @@ let rec toplevel ctx { Location.data = c; Location.loc } =
     | Input.TopTime c ->
         let c = comp ctx c in
         (ctx, Syntax.TopTime c)
-    | Input.TopFunction (f, xts, c) ->
+    | Input.TopFunction (ret_ty, f, xts, c) ->
+        let ret_ty = valty ret_ty in
         let c = comp (add_args xts ctx) c
         and xts = List.map (fun (x, t) -> (x, valty t)) xts in
         let ctx = add_fun f ctx in
-        (ctx, Syntax.TopFunction (f, xts, c))
+        (ctx, Syntax.TopFunction (ret_ty, f, xts, c))
     | Input.TopExternal (f, s, ft) ->
         let ctx = add_fun f ctx in
         let ft = funty ft in

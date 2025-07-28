@@ -74,8 +74,8 @@ commandline:
 (* Things that can be defined on toplevel. *)
 topcomp: mark_location(plain_topcomp) { $1 }
 plain_topcomp:
-  | FUNCTION f=var_name LPAREN xs=fun_args RPAREN COLON c=term
-                                                            { TopFunction (f, xs, c) }
+  | FUNCTION dt=datatype f=var_name LPAREN xs=fun_args RPAREN COLON c=term
+                                                            { TopFunction (dt, f, xs, c) }
   | EXTERNAL f=var_name COLON ft=funty EQ s=QUOTED_STRING   { TopExternal (f, s, ft) }
   | DO c=term                                               { TopDo c }
   | TIME c=term                                             { TopTime c }

@@ -213,8 +213,9 @@ let rec toplevel ctx { Location.data = tc; loc } =
     | Syntax.TopTime c ->
         let t = comp ctx c in
         (ctx, Syntax.TyTopTime (c, t))
-    | Syntax.TopFunction (f, xts, c) ->
-        let t = comp (push_args xts ctx) c in
+    | Syntax.TopFunction (ret_ty, f, xts, c) ->
+        let t = Type.Cmd ret_ty in
+        check_comp (push_args xts ctx) t c ;
         let ft = (List.map snd xts, t) in
         let ctx = push_fun ft ctx in
         (ctx, Syntax.TyTopFunction (f, xts, c, t))

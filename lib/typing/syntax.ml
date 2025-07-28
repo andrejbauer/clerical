@@ -34,7 +34,7 @@ type toplevel = toplevel' Location.located
 and toplevel' =
   | TopDo of comp
   | TopTime of comp
-  | TopFunction of Name.ident * (Name.ident * Type.valty) list * comp
+  | TopFunction of Type.valty * Name.ident * (Name.ident * Type.valty) list * comp
   | TopExternal of Name.ident * string * Type.funty
   | TopFile of toplevel list
   | TopPrecision of int
