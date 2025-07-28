@@ -1,25 +1,25 @@
-function prec(int x):
+function real prec(int x):
   1.0 /. real(shift(1, x))
 
-function abs(real x):
+function real abs(real x):
   lim n =>
     case
       x <. prec (n + 1) => real (0) -. x
     | x >. real (0) -. prec (n + 1) => x
     end
 
-function bound(real x, real d):
+function bool bound(real x, real d):
   case
     abs(x) <. d => true
   | abs(x) >. d /. real(2) => false
   end
 
-function nbound(real x, real d):
+function bool nbound(real x, real d):
   if bound(x, d) then false else true end
 
 
 
-function sin (real x):
+function real sin (real x):
   lim p =>
     var epsilon := prec(p)
     and m := 0
@@ -34,7 +34,7 @@ function sin (real x):
       q := q *. x *. x /. real(2 * m + 1) /. real(2 * m)
     end; A
 
-function pow(real x, int n):
+function real pow(real x, int n):
   var p := 1.0 and
   i := 0 in
   while i < n do
@@ -43,7 +43,7 @@ function pow(real x, int n):
   end;
   p
 
-function e (real x):
+function real e (real x):
   lim n =>
     let err = shift(1, n) in
     var i := 1
@@ -58,7 +58,7 @@ function e (real x):
     end ;
     e
 
-function pi ():
+function real pi ():
   lim n =>
     var k := 0
     and a := real(3)
@@ -78,10 +78,10 @@ function pi ():
     end; (a +. b) /. real(2)
 
 
-function square(real x, real c):
+function real square(real x, real c):
   x *. x -. c
 
-function sqrt (real a, real b, real c):
+function real sqrt (real a, real b, real c):
   lim n =>
     var k := 0
     and a := a
@@ -100,7 +100,7 @@ function sqrt (real a, real b, real c):
       k := k + 1
     end; (a +. b) /. real(2)
 
-function sum (int prec):
+function real sum (int prec):
   trace;
   let rprec = real(prec) in
   var a := (array [prec] i => let ri = real(i) in 1.0 /. e(((ri +. 0.5) *. (ri +. 0.5))/. rprec /. rprec /. 2.0))
@@ -112,7 +112,7 @@ function sum (int prec):
   end;
   sum /. real(prec)
 
-function integral ():
+function real integral ():
   lim n =>
     var a := real(0)
     and b := real(1)
@@ -120,7 +120,7 @@ function integral ():
     sum(prec)
 
 
-function demo ():
+function real demo ():
   plet i = integral ()
   and pi = pi () in
   let s = sqrt(1.0, 10.0, 2.0 *. pi) in
