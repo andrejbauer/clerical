@@ -25,7 +25,7 @@ function real f(real x):
    2. We use trisection (not bisection) so that we never get stuck.
       (We could get stuck with bijection if the mid-point accidentally hits zero.
 *)
-function real trisect(real a, real b):
+qfunction real trisect(real a, real b):
   lim n =>
      (* We need to produce a real within 2⁻ⁿ of the zero. *)
      let ε = 1.0 /. real(shift(1, n)) in  (* ε = 2⁻ⁿ *)
