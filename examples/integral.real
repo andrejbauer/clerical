@@ -101,6 +101,7 @@ function sqrt (real a, real b, real c):
     end; (a +. b) /. real(2)
 
 function sum (int prec):
+  trace;
   let rprec = real(prec) in
   var a := (array [prec] i => let ri = real(i) in 1.0 /. e(((ri +. 0.5) *. (ri +. 0.5))/. rprec /. rprec /. 2.0))
   and sum := 0.0
