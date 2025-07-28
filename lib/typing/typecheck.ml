@@ -204,6 +204,13 @@ and newvar_clauses ctx lst =
   in
   fold ctx lst
 
+let check_fundefs ctx lst =
+  let ctx_fs =
+    List.fold_left (fun ctx Location.{data=(_, xts, _, t);_} -> push_fun (List.map snd xts, t) ctx) ctx lst
+  in
+  List.iter (fun Location.{data=(_, xts, c, t);_} -> check_comp (push_args xts ctx_fs) t c) lst ;
+  ctx_fs
+
 let rec toplevel ctx { Location.data = tc; loc } =
   let ctx, tc =
     match tc with
@@ -213,13 +220,9 @@ let rec toplevel ctx { Location.data = tc; loc } =
     | Syntax.TopTime c ->
         let t = comp ctx c in
         (ctx, Syntax.TyTopTime (c, t))
-    | Syntax.TopFunction (t, f, xts, c) ->
-        let t = Type.Cmd t in
-        let ft = (List.map snd xts, t) in
-        let ctx_f = push_fun ft ctx in
-        let ctx_c = push_args xts ctx_f in
-        check_comp ctx_c t c ;
-        (ctx_f, Syntax.TyTopFunction (f, xts, c, t))
+    | Syntax.TopFunctions lst ->
+      let ctx = check_fundefs ctx lst in
+      (ctx, Syntax.TyTopFunctions lst)
     | Syntax.TopExternal (f, s, ft) ->
         let ctx = push_fun ft ctx in
         (ctx, Syntax.TyTopExternal (f, s, ft))

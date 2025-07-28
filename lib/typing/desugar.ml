@@ -172,6 +172,21 @@ let rec comp ctx { Location.data = c; Location.loc } =
   let c = comp' ctx c in
   Location.locate ~loc c
 
+and fundefs ctx lst =
+  let ctx_fs = List.fold_left (fun ctx Location.{data=(f, _, _, _); _} -> add_fun f ctx) ctx lst in
+  let lst = List.map
+    (function Location.{loc; data=(f, xts, c, t)} ->
+       let t = cmpty t in
+       let ctx_c = add_args xts ctx_fs in
+       let c = comp ctx_c c
+       and xts = List.map (fun (x, t) -> (x, valty t)) xts in
+       Location.locate ~loc (f, xts, c, t)
+    )
+    lst
+  in
+  (ctx_fs, Syntax.TopFunctions lst)
+
+
 let rec toplevel ctx { Location.data = c; Location.loc } =
   let toplevel' ctx = function
     | Input.TopDo c ->
@@ -180,13 +195,8 @@ let rec toplevel ctx { Location.data = c; Location.loc } =
     | Input.TopTime c ->
         let c = comp ctx c in
         (ctx, Syntax.TopTime c)
-    | Input.TopFunction (t, f, xts, c) ->
-        let t = valty t in
-        let ctx_f = add_fun f ctx in
-        let ctx_c = add_args xts ctx_f in
-        let c = comp ctx_c c
-        and xts = List.map (fun (x, t) -> (x, valty t)) xts in
-        (ctx_f, Syntax.TopFunction (t, f, xts, c))
+    | Input.TopFunctions fs ->
+        fundefs ctx fs
     | Input.TopExternal (f, s, ft) ->
         let ctx = add_fun f ctx in
         let ft = funty ft in

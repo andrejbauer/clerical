@@ -29,12 +29,15 @@ and comp' =
   | Lim of Name.ident * comp
   | Trace
 
+type fundef =
+  (Name.ident * (Name.ident * Type.valty) list * comp * Type.cmdty) Location.located
+
 type toplevel = toplevel' Location.located
 
 and toplevel' =
   | TopDo of comp
   | TopTime of comp
-  | TopFunction of Type.valty * Name.ident * (Name.ident * Type.valty) list * comp
+  | TopFunctions of fundef list
   | TopExternal of Name.ident * string * Type.funty
   | TopFile of toplevel list
   | TopPrecision of int
@@ -46,8 +49,7 @@ type tytoplevel = tytoplevel' Location.located
 and tytoplevel' =
   | TyTopDo of comp * Type.cmdty
   | TyTopTime of comp * Type.cmdty
-  | TyTopFunction of
-      Name.ident * (Name.ident * Type.valty) list * comp * Type.cmdty
+  | TyTopFunctions of fundef list
   | TyTopExternal of Name.ident * string * Type.funty
   | TyTopFile of tytoplevel list
   | TyTopPrecision of int

@@ -74,8 +74,8 @@ commandline:
 (* Things that can be defined on toplevel. *)
 topcomp: mark_location(plain_topcomp) { $1 }
 plain_topcomp:
-  | FUNCTION dt=datatype f=var_name LPAREN xs=fun_args RPAREN COLON c=term
-                                                            { TopFunction (dt, f, xs, c) }
+  | fs=fundefs
+    { TopFunctions fs }
   | EXTERNAL f=var_name COLON ft=funty EQ s=QUOTED_STRING   { TopExternal (f, s, ft) }
   | DO c=term                                               { TopDo c }
   | TIME c=term                                             { TopTime c }
@@ -86,6 +86,18 @@ plain_topcomp:
 topdirective: mark_location(plain_topdirective)      { $1 }
 plain_topdirective:
   | LOAD fn=QUOTED_STRING                            { TopLoad fn }
+
+(* Top-level mutually recursive function definitions. *)
+fundef : mark_location(fundef_) { $1 }
+fundef_:
+  | FUNCTION dt=datatype f=var_name LPAREN xs=fun_args RPAREN COLON c=term
+    { (f, xs, c, dt) }
+
+fundefs:
+  | fd=fundef
+    { [fd] }
+  | fd=fundef AND fds=fundefs
+    { fd :: fds }
 
 (* Main syntax tree *)
 

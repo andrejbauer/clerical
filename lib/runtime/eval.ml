@@ -312,6 +312,15 @@ let topfun env xs c =
   in
   push_fun g env
 
+let rec topfuns ~quiet env = function
+  | [] -> env
+  | Location.{data=(f, xts, c, t); loc} :: lst ->
+    let env = topfun env (List.map fst xts) c in
+    if not quiet then
+      Format.printf "function %s : %t@." f
+        (Type.print_funty (List.map snd xts, t)) ;
+    topfuns ~quiet env lst
+
 let topexternal ~loc env s =
   match External.lookup s with
   | None -> Run.(error ~loc (UnknownExternal s))
@@ -325,44 +334,40 @@ let topexternal ~loc env s =
       in
       push_fun h env
 
-let rec toplevel ~quiet runtime Location.{ data = c; loc } =
+let rec toplevel ~quiet env Location.{ data = c; loc } =
   match c with
   | Syntax.TyTopDo (c, Type.Cmd dt) ->
-      let v = topcomp ~max_prec:!Config.max_prec runtime c in
+      let v = topcomp ~max_prec:!Config.max_prec env c in
       if not quiet then
         Format.printf "%t : %t@." (Value.print_result v) (Type.print_valty dt);
-      runtime
+      env
   | Syntax.TyTopTime (c, Type.Cmd dt) ->
       let t0 = Unix.gettimeofday () in
-      let v = topcomp ~max_prec:!Config.max_prec runtime c in
+      let v = topcomp ~max_prec:!Config.max_prec env c in
       let t1 = Unix.gettimeofday () in
       if not quiet then
         Format.printf "%t : %t@." (Value.print_result v) (Type.print_valty dt);
       Format.printf "Execution time: %f s@." (t1 -. t0);
-      runtime
-  | Syntax.TyTopFunction (f, xts, c, t) ->
-      let runtime = topfun runtime (List.map fst xts) c in
-      if not quiet then
-        Format.printf "function %s : %t@." f
-          (Type.print_funty (List.map snd xts, t));
-      runtime
+      env
+  | Syntax.TyTopFunctions lst ->
+      topfuns ~quiet env lst
   | Syntax.TyTopExternal (f, s, ft) ->
-      let runtime = topexternal ~loc runtime s in
+      let env = topexternal ~loc env s in
       if not quiet then
         Format.printf "external %s : %t@." f (Type.print_funty ft);
-      runtime
-  | Syntax.TyTopFile cmds -> topfile ~quiet runtime cmds
+      env
+  | Syntax.TyTopFile cmds -> topfile ~quiet env cmds
   | Syntax.TyTopPrecision p ->
       Config.out_prec := p;
       if not quiet then Format.printf "Output precision set to %d@." p;
-      runtime
+      env
   | Syntax.TyTopDomains d ->
       Config.domains := Some d;
       if not quiet then Format.printf "Number of domains set to %d@." d;
-      runtime
+      env
 
-and topfile ~quiet runtime = function
-  | [] -> runtime
+and topfile ~quiet env = function
+  | [] -> env
   | cmd :: cmds ->
-      let runtime = toplevel ~quiet runtime cmd in
-      topfile ~quiet runtime cmds
+      let env = toplevel ~quiet env cmd in
+      topfile ~quiet env cmds

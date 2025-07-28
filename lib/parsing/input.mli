@@ -27,12 +27,15 @@ and comp' =
   | Lim of Name.ident * comp
   | Trace
 
+type fundef =
+  (Name.ident * (Name.ident * ty) list * comp * ty) Location.located
+
 type toplevel = toplevel' Location.located
 
 and toplevel' =
   | TopDo of comp
   | TopTime of comp
-  | TopFunction of ty * Name.ident * (Name.ident * ty) list * comp
+  | TopFunctions of fundef list
   | TopExternal of Name.ident * string * funty
   | TopLoad of string
   | TopPrecision of Mpzf.t
