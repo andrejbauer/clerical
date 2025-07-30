@@ -271,7 +271,7 @@ and comp_ro_real ~loc env c = as_real ~loc:c.Location.loc (comp_ro env c)
     output interval has width more than [width], repeat at a higher working
     precision. The output is guaranteed to have widh at most [width]. *)
 and comp_ro_real_width ~loc width env c =
-  let r = comp_ro_real ~loc env c in
+  let r = comp_ro_real ~loc (next_prec ~loc env) c in
   let r_width = Real.width ~prec:16 ~round:Real.down r in
   if Dyadic.leq r_width width then r
   else (
