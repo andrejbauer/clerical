@@ -201,8 +201,8 @@ and check_comp ctx (Type.Cmd t) c =
 (** Check that an expression (read-only computation) has the given type. *)
 and check_expr ctx dt c = check_comp ctx (Type.Cmd dt) c
 
-(** Check that a read-only computation is an array and return the type
-    of the array elements. *)
+(** Check that a read-only computation is an array and return the type of the
+    array elements. *)
 and check_array ctx e =
   match expr ctx e with
   | Type.Array dt -> dt

@@ -100,24 +100,27 @@ function real sqrt (real a, real b, real c):
       k := k + 1
     end; (a +. b) /. real(2)
 
-function real sum (int prec):
+function real f(real x): exp(-1.0 *. x *. x /. 2.0)
+
+function int max_f'(): 1
+
+function real sum (int N):
   trace;
-  let rprec = real(prec) in
-  var a := (array [prec] i => let ri = real(i) in 1.0 /. e(((ri +. 0.5) *. (ri +. 0.5))/. rprec /. rprec /. 2.0))
+  let N' = real(N) in
+  var ys := (array [N] i => f ((real(i) +. 0.5) /. N'))
   and sum := 0.0
   and i := 0 in
-  while i < prec do
-    sum := sum +. a[i];
+  while i < N do
+    sum := sum +. ys[i];
     i := i + 1
-  end;
-  sum /. real(prec)
+  end ;
+  sum /. N'
 
 function real integral ():
   lim n =>
-    var a := real(0)
-    and b := real(1)
-    and prec := shift(1, n) in
-    sum(prec)
+    let N = max_f'() * shift(1, n) in
+    trace ;
+    sum(N)
 
 
 function real demo ():

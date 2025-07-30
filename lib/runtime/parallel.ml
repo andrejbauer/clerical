@@ -17,11 +17,11 @@ let run_guards guards =
   try
     Picos_std_structured.Run.first_or_terminate
     @@ List.map
-      (fun (g, v) () ->
-         if g () then v else raise Picos_std_structured.Control.Terminate)
-      guards
+         (fun (g, v) () ->
+           if g () then v else raise Picos_std_structured.Control.Terminate)
+         guards
   with
-  | Picos_std_structured.Control.Errors [(exn, _); _] -> raise exn
+  | Picos_std_structured.Control.Errors [ (exn, _); _ ] -> raise exn
   | Picos_std_structured.Control.Errors [] as exn -> raise exn
 
 (** Run a toplevel computation that sets up the domains. *)

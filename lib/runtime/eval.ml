@@ -204,44 +204,23 @@ let rec comp env { Location.data = c; Location.loc } :
           let v = comp_ro_value env e in
           r := v;
           (env, Value.(return VUnit)))
-  | Syntax.Lim (x, e) -> (
+  | Syntax.Lim (x, e) ->
       (* when computing at precision n we first try to compute the n-th term
         of the limit, and use that as the approximate result. If the computation
         fails we fall back to computing successively the 1st, 2nd, ... term of
         the limit, and take the last one that doesn't fail.
      *)
-      let Run.{ topenv = { prec = { prec_mpfr; _ }; _ }; _ } = env in
-      let try_lim n =
-        let env' = push_ro x (Value.VInteger (Mpzf.of_int n)) env in
-        let r = comp_ro_real ~loc:e.Location.loc env' e in
-        let err =
-          Dyadic.shift ~prec:prec_mpfr ~round:Dyadic.up Dyadic.one (-n)
-        in
-        let rl =
-          Dyadic.sub ~prec:prec_mpfr ~round:Dyadic.down (Real.lower r) err
-        and ru =
-          Dyadic.add ~prec:prec_mpfr ~round:Dyadic.up (Real.upper r) err
-        in
-        let r = Real.make rl ru in
-        (env, Value.(return (VReal r)))
-      in
-      try
-        (* If we succeed with current precision then we return *)
-        try_lim prec_mpfr
-      with
-      (* If current precision fails, then successively try n = 1, 2, 4, ... up to mpfr_prec, until we fail.
-         We return the last result that succeeded. This strategy was inspired by iRRAM. *)
-      | Run.NoPrecision ->
-        let rec loop n previous_result =
-          try
-            if n >= prec_mpfr then previous_result
-            else
-              let current_result = try_lim (2 * n) in
-              loop (2 * n) current_result
-          with Run.NoPrecision -> previous_result
-        in
-        let poorest = try_lim 1 in
-        loop 1 poorest)
+      let Run.{ topenv = { prec = { prec_mpfr = n; _ }; _ }; _ } = env in
+      (* We will compute the n-th term of the limit and make sure the output interval contains the true
+         limit and has width at most 2^(-n+1). *)
+      let env' = push_ro x (Value.VInteger (Mpzf.of_int n)) env in
+      let width = Dyadic.shift ~prec:16 ~round:Dyadic.down Dyadic.one (-n) in
+      let r = comp_ro_real_width ~loc:e.Location.loc width env' e in
+      let err = Dyadic.shift ~prec:n ~round:Dyadic.up Dyadic.one (-n) in
+      let rl = Dyadic.sub ~prec:n ~round:Dyadic.down (Real.lower r) err
+      and ru = Dyadic.add ~prec:n ~round:Dyadic.up (Real.upper r) err in
+      let r = Real.make rl ru in
+      (env, Value.(return (VReal r)))
   | Syntax.ArrayEnum es ->
       let vs =
         Array.of_list
@@ -287,6 +266,17 @@ and comp_ro_boolean ~loc env c = as_boolean ~loc:c.Location.loc (comp_ro env c)
 
 (** Compute a read-only computation and extract its value as a real. *)
 and comp_ro_real ~loc env c = as_real ~loc:c.Location.loc (comp_ro env c)
+
+(** Compute a read-only computation and extract is value as a real. If the
+    output interval has width more than [width], repeat at a higher working
+    precision. The output is guaranteed to have widh at most [width]. *)
+and comp_ro_real_width ~loc width env c =
+  let r = comp_ro_real ~loc env c in
+  let r_width = Real.width ~prec:16 ~round:Real.down r in
+  if Dyadic.leq r_width width then r
+  else (
+    Format.printf "comp_ro_real_width increasing prec@\n@.";
+    comp_ro_real_width ~loc width (next_prec ~loc env) c)
 
 (** Compute a read-only computation and extract its value as an array. *)
 and comp_ro_array ~loc env c = as_array ~loc:c.Location.loc (comp_ro env c)

@@ -33,7 +33,7 @@ let add_args xts ctx =
   List.fold_left (fun ctx (x, _) -> add_ident x ctx) ctx xts
 
 (** Add a new function name to the context. *)
-let add_fun f { idents; funs } = { idents; funs = funs @ [f] }
+let add_fun f { idents; funs } = { idents; funs = funs @ [ f ] }
 
 (** Find the de Bruijn index of [x] in the context [ctx]. *)
 let index x { idents; _ } =
@@ -73,23 +73,15 @@ let rec comp ctx { Location.data = c; Location.loc } =
         match index x ctx with
         | None -> error ~loc (UnknownIdentifier x)
         | Some k -> Syntax.Var k)
-
     | Input.Boolean b -> Syntax.Boolean b
-
     | Input.Integer k -> Syntax.Integer k
-
     | Input.Float x -> Syntax.Float x
-
     | Input.And (c1, c2) ->
-      let c1 = comp ctx c1
-      and c2 = comp ctx c2 in
-      Syntax.And (c1, c2)
-
+        let c1 = comp ctx c1 and c2 = comp ctx c2 in
+        Syntax.And (c1, c2)
     | Input.Or (c1, c2) ->
-      let c1 = comp ctx c1
-      and c2 = comp ctx c2 in
-      Syntax.Or (c1, c2)
-
+        let c1 = comp ctx c1 and c2 = comp ctx c2 in
+        Syntax.Or (c1, c2)
     | Input.Apply (f, es) -> (
         match index_fun f ctx with
         | None -> error ~loc (UnknownFunction f)
@@ -189,19 +181,23 @@ let rec comp ctx { Location.data = c; Location.loc } =
   Location.locate ~loc c
 
 and fundefs ctx lst =
-  let ctx_fs = List.fold_left (fun ctx Location.{data=(f, _, _, _); _} -> add_fun f ctx) ctx lst in
-  let lst = List.map
-    (function Location.{loc; data=(f, xts, c, t)} ->
-       let t = cmpty t in
-       let ctx_c = add_args xts ctx_fs in
-       let c = comp ctx_c c
-       and xts = List.map (fun (x, t) -> (x, valty t)) xts in
-       Location.locate ~loc (f, xts, c, t)
-    )
-    lst
+  let ctx_fs =
+    List.fold_left
+      (fun ctx Location.{ data = f, _, _, _; _ } -> add_fun f ctx)
+      ctx lst
+  in
+  let lst =
+    List.map
+      (function
+        | Location.{ loc; data = f, xts, c, t } ->
+            let t = cmpty t in
+            let ctx_c = add_args xts ctx_fs in
+            let c = comp ctx_c c
+            and xts = List.map (fun (x, t) -> (x, valty t)) xts in
+            Location.locate ~loc (f, xts, c, t))
+      lst
   in
   (ctx_fs, Syntax.TopFunctions lst)
-
 
 let rec toplevel ctx { Location.data = c; Location.loc } =
   let toplevel' ctx = function
@@ -211,8 +207,7 @@ let rec toplevel ctx { Location.data = c; Location.loc } =
     | Input.TopTime c ->
         let c = comp ctx c in
         (ctx, Syntax.TopTime c)
-    | Input.TopFunctions fs ->
-        fundefs ctx fs
+    | Input.TopFunctions fs -> fundefs ctx fs
     | Input.TopExternal (f, s, ft) ->
         let ctx = add_fun f ctx in
         let ft = funty ft in

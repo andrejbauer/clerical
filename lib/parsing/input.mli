@@ -31,8 +31,7 @@ and comp' =
   | ArrayIndex of comp * comp
   | ArrayLen of comp
 
-type fundef =
-  (Name.ident * (Name.ident * ty) list * comp * ty) Location.located
+type fundef = (Name.ident * (Name.ident * ty) list * comp * ty) Location.located
 
 type toplevel = toplevel' Location.located
 

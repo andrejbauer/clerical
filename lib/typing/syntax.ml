@@ -34,7 +34,8 @@ and comp' =
   | ArrayLen of comp
 
 type fundef =
-  (Name.ident * (Name.ident * Type.valty) list * comp * Type.cmdty) Location.located
+  (Name.ident * (Name.ident * Type.valty) list * comp * Type.cmdty)
+  Location.located
 
 type toplevel = toplevel' Location.located
 

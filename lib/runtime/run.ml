@@ -68,54 +68,46 @@ type entry =
   | RO of Value.value  (** read-only stack value *)
   | RW of Value.value ref  (** read-write stack value *)
 
-type precision = { prec_mpfr_min : int; prec_lim_min : int; prec_mpfr : int }
+type precision = { prec_mpfr : int }
 (** Precision describes at what precision we run MPFR (the field [prec_mpfr])
     and which elements of limits we are computing [prec_lim]. We also record the
-    starting values. The field prec_while gives the maximum number of iterations
-    allowed in a while loop. *)
+    starting values. *)
 
 (** In absence of any knowledge, we scan for each value of [prec_mpfr] all
     values of [prec_lim] up to [prec_mpfr]. *)
-let next_prec ~loc
-    ({ prec_mpfr_min = _k0; prec_lim_min = _n0; prec_mpfr = k } as prec) =
+let next_prec ~loc { prec_mpfr = k } =
   (* if 2 * n < k then { prec with prec_lim = n + 1} *)
   (* else  *)
   if k >= !Config.max_prec then error ~loc PrecisionLoss
-  else { prec with prec_mpfr = 1 + (3 * k / 2) }
+  else { prec_mpfr = 1 + (3 * k / 2) }
 
 let initial_prec () =
-  let k0 = max 2 !Config.init_prec and n0 = 0 in
-  { prec_mpfr_min = k0; prec_lim_min = n0; prec_mpfr = k0 }
+  let k0 = max 2 !Config.init_prec in
+  { prec_mpfr = k0 }
 
 let print_prec { prec_mpfr = k; _ } ppf = Format.fprintf ppf "(mpfr=%d)" k
 
-(** A Clerical function *)
 type func = loc:Location.t -> topenv -> Value.value list -> Value.result_ro
+(** A Clerical function *)
 
+and topenv = { prec : precision; funs : func list }
 (** The top-level environment, currently it holds just function definitions *)
-and topenv = {
-  prec : precision ;
-  funs : func list ;
-}
 
-(** The top frame is the one that we can write into, all the other frames are read-only. *)
 type stack = {
   frame : (Name.ident * entry) list; (* read-write *)
   frames : (Name.ident * entry) list list; (* read-only *)
 }
+(** The top frame is the one that we can write into, all the other frames are
+    read-only. *)
 
-type runtime = {
-  topenv : topenv ;
-  stack : stack
-}
+type runtime = { topenv : topenv; stack : stack }
 
 (** Initial toplevel *)
-let initial_topenv = { prec = initial_prec () ; funs = [] }
+let initial_topenv = { prec = initial_prec (); funs = [] }
 
 (** Initial stack *)
 let initial_stack = { frame = []; frames = [] }
 
-let initial_runtime = { topenv = initial_topenv ; stack = initial_stack }
-
-let get_prec {topenv={prec;_};_} = prec
-let get_stack {stack;_} = stack
+let initial_runtime = { topenv = initial_topenv; stack = initial_stack }
+let get_prec { topenv = { prec; _ }; _ } = prec
+let get_stack { stack; _ } = stack
