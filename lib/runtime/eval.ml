@@ -214,7 +214,7 @@ let rec comp env { Location.data = c; Location.loc } :
       (* We will compute the n-th term of the limit and make sure the output interval contains the true
          limit and has width at most 2^(-n+1). *)
       let env' = push_ro x (Value.VInteger (Mpzf.of_int n)) env in
-      let width = Dyadic.shift ~prec:16 ~round:Dyadic.down Dyadic.one (-n) in
+      let width = Dyadic.shift ~prec:n ~round:Dyadic.down Dyadic.one (-n) in
       let r = comp_ro_real_width ~loc:e.Location.loc width env' e in
       let err = Dyadic.shift ~prec:n ~round:Dyadic.up Dyadic.one (-n) in
       let rl = Dyadic.sub ~prec:n ~round:Dyadic.down (Real.lower r) err
@@ -271,8 +271,9 @@ and comp_ro_real ~loc env c = as_real ~loc:c.Location.loc (comp_ro env c)
     output interval has width more than [width], repeat at a higher working
     precision. The output is guaranteed to have widh at most [width]. *)
 and comp_ro_real_width ~loc width env c =
+  let Run.{ topenv = { prec = { prec_mpfr = n; _ }; _ }; _ } = env in
   let r = comp_ro_real ~loc (next_prec ~loc env) c in
-  let r_width = Real.width ~prec:16 ~round:Real.down r in
+  let r_width = Real.width ~prec:n ~round:Real.down r in
   if Dyadic.leq r_width width then r
   else (
     Format.printf "comp_ro_real_width increasing prec@\n@.";

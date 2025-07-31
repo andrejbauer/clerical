@@ -79,7 +79,7 @@ let next_prec ~loc { prec_mpfr = k } =
   (* if 2 * n < k then { prec with prec_lim = n + 1} *)
   (* else  *)
   if k >= !Config.max_prec then error ~loc PrecisionLoss
-  else { prec_mpfr = 1 + (3 * k / 2) }
+  else { prec_mpfr = 1 + (5 * k / 4) }
 
 let initial_prec () =
   let k0 = max 2 !Config.init_prec in
