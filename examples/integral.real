@@ -86,7 +86,7 @@ function real sqrt (real a, real b, real c):
     var k := 0
     and a := a
     and b := b in
-    while k < n * int(b -. a)
+    while k < n
     do
       var x := (a +. b) /. real(2) in
       if
@@ -127,7 +127,7 @@ function real demo ():
   plet i = integral ()
   and pi = pi () in
   let s = sqrt(1.0, 10.0, 2.0 *. pi) in
-  i /. s
+  2.0 *. i /. s
 
 function real sum_array(int start, int last):
   var sum := 0.0 in
