@@ -28,6 +28,9 @@ let run_guards guards =
   with
   | Picos_std_structured.Control.Errors [(exn, _); _] -> raise (extract_exn exn)
 
+let recommended_domains () =
+  Picos_domain.recommended_domain_count () - 1
+
 (** Run a toplevel computation that sets up the domains. *)
 let toplevel ?domains task =
   let n_domains =
