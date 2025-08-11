@@ -105,7 +105,6 @@ function real f(real x): exp(-1.0 *. x *. x /. 2.0)
 function int max_f'(): 1
 
 function real sum (int N):
-  trace;
   let N' = real(N) in
   var ys := (array [N] i => f ((real(i) +. 0.5) /. N'))
   and sum := 0.0
@@ -119,7 +118,6 @@ function real sum (int N):
 function real integral ():
   lim n =>
     let N = max_f'() * shift(1, n) in
-    trace ;
     sum(N)
 
 
@@ -129,19 +127,24 @@ function real demo ():
   let s = sqrt(1.0, 10.0, 2.0 *. pi) in
   2.0 *. i /. s
 
-function real sum_array(int start, int last):
+function real integral_reduce(int start, int last, real N):
   var sum := 0.0 in
-  if last - start < 100000 then
+  if last - start < 1000 then
     var i := start in
     while i < last do
-      sum := sum +. f(real(i) /. 1000000.0);
+      sum := sum +. f(real(i) /. N);
       i := i + 1
     end;
-    sum /. 1000000.0
+    sum /. N
   else
     let mid = int((real(start) +. real(last)) /. 2.0) in
-    plet a = sum_array(start, mid)
-    and b = sum_array(mid, last) in
+    plet a = integral_reduce(start, mid, N)
+    and b = integral_reduce(mid, last, N) in
     sum := a +. b;
     sum
   end
+
+function real integral2 ():
+  lim n =>
+    let N = shift(1, n) in
+    integral_reduce(0, N, real(N))

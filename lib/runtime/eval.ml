@@ -275,9 +275,9 @@ and comp_ro_real_width ~loc width env c =
   let r = comp_ro_real ~loc (next_prec ~loc env) c in
   let r_width = Real.width ~prec:n ~round:Real.down r in
   if Dyadic.leq r_width width then r
-  else (
-    Format.printf "comp_ro_real_width increasing prec@\n@.";
-    comp_ro_real_width ~loc width (next_prec ~loc env) c)
+  else
+    (* Format.printf "comp_ro_real_width increasing prec@\n@."; *)
+    comp_ro_real_width ~loc width (next_prec ~loc env) c
 
 (** Compute a read-only computation and extract its value as an array. *)
 and comp_ro_array ~loc env c = as_array ~loc:c.Location.loc (comp_ro env c)
