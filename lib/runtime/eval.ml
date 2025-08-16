@@ -9,6 +9,14 @@ let next_prec ~loc (Run.{ topenv = { prec; _ } as tenv; _ } as env) =
   let prec = Run.next_prec ~loc prec in
   Run.{ env with topenv = { tenv with prec } }
 
+(** Keep a depth counter for recursion. Yield every 1000 calls to prevent
+    infinite loops for guards in case statement. *)
+let next_depth (Run.{ depth; _ } as env) =
+  if depth < 1000 then Run.{ env with depth = depth + 1 }
+  else (
+    Parallel.yield ();
+    Run.{ env with depth = 0 })
+
 (** Make the stack read-only by pushing a new empty top frame onto it, and
     converting the read-write entries to read-only entries. *)
 let make_ro env =
@@ -73,7 +81,8 @@ let lookup_fun k Run.{ topenv = { funs; _ }; _ } =
   lookup k funs
 
 (** Print trace *)
-let print_trace ~loc Run.{ stack = { frame; frames }; topenv = { prec; _ } } =
+let print_trace ~loc Run.{ stack = { frame; frames }; topenv = { prec; _ }; _ }
+    =
   let xvs = frame @ List.flatten frames in
   Print.message ~loc "Trace" "\tprecision: %t@\n\t%t@." (Run.print_prec prec)
     (fun ppf ->
@@ -148,8 +157,9 @@ let rec comp env { Location.data = c; Location.loc } :
       match lookup_fun k env with
       | None -> Run.error ~loc Run.InvalidFunction
       | Some f ->
+          let env = next_depth env in
           let vs = List.map (fun e -> comp_ro_value env e) es in
-          let p = f ~loc env.Run.topenv vs in
+          let p = f ~loc env vs in
           let r = Value.ro_as_rw p in
           (env, r))
   | Syntax.Skip -> (env, Value.(return VUnit))
@@ -339,8 +349,8 @@ let topcomp ~max_prec env ({ Location.loc; _ } as c) =
   with Parallel.InvalidCase -> Run.(error ~loc InvalidCase)
 
 let topfun env xs c =
-  let g ~loc topenv vs =
-    let env = Run.{ topenv; stack = initial_stack } in
+  let g ~loc env vs =
+    let env = Run.{ env with stack = initial_stack } in
     let env = push_ros' xs vs env in
     try comp_ro env c
     with Run.Error Location.{ data = err; loc = loc' } ->
@@ -361,7 +371,7 @@ let topexternal ~loc env s =
   match External.lookup s with
   | None -> Run.(error ~loc (UnknownExternal s))
   | Some g ->
-      let h ~loc topenv vs =
+      let h ~loc Run.{ topenv; _ } vs =
         let Run.{ prec; _ } = topenv in
         try g ~prec vs
         with Run.Error { Location.data = err; loc = loc' } ->
