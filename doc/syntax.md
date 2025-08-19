@@ -11,10 +11,10 @@ These are the commands you can put in a `.real` file or type into the interactiv
 
 The datatypes are
 
-* `bool` – booleans `true` and `false`
-* `int` – integers (implemented using GMP large integers)
-* `real` – real numbers (using MPFR for arbitrary precision)
-* `t[]` – array of values of type `t`
+- `bool` – booleans `true` and `false`
+- `int` – integers (implemented using GMP large integers)
+- `real` – real numbers (using MPFR for arbitrary precision)
+- `t[]` – array of values of type `t`
 
 ### Function definition
 
@@ -34,7 +34,20 @@ The return type of `⟨functionName⟩` is computed automatically. Example:
          end ;
          p
 
-Functions may *not* be recursive, but they may refer to previously defined functions.
+In this extended implementation of Clerical, functions may be recursive.
+For mutual recursion use the syntax from the following example:
+
+```
+function real batman(int k, real x, real y):
+  if k == 0 then
+    x *. y
+  else
+    robin (k - 1, x +. y)
+  end
+
+and function real robin(int k, real z):
+  batman(k, 1.0 /. z, 2.0)
+```
 
 ### External declarations
 
@@ -44,14 +57,13 @@ To extend Clerical with a new primitive function, define its OCaml implementatio
 
 where:
 
-* `⟨funcName⟩` is the name of the function in Clerical (you may use infix operators if
-you put them in parentheses),
-* `⟨ty1⟩`, .., `⟨tyN⟩` are types of arguments,
-* `⟨ty_ret⟩` is the return type,
-* `⟨str⟩` is the string identifier of the OCaml definition.
+- `⟨funcName⟩` is the name of the function in Clerical (you may use infix operators if
+  you put them in parentheses),
+- `⟨ty1⟩`, .., `⟨tyN⟩` are types of arguments,
+- `⟨ty_ret⟩` is the return type,
+- `⟨str⟩` is the string identifier of the OCaml definition.
 
 Please consult `src/external.ml` and `prelude.real` for examples.
-
 
 ### Runinng a command
 
@@ -65,7 +77,7 @@ evaluates the command `⟨cmd⟩`. For example:
 
 ### Setting precision
 
-You can set the *output* precision at which a toplevel command prints reals with
+You can set the _output_ precision at which a toplevel command prints reals with
 
     precision ⟨int⟩
 
@@ -104,7 +116,7 @@ Anywhere in your code you may run the command `trace` which behaves exactly like
 (see below), except that it also prints out the current source position, precision, and
 values of all variables.
 
-If you use the command-line opton `--trace`, a trace will be printed for *every*
+If you use the command-line opton `--trace`, a trace will be printed for _every_
 expression that is evaluated. This gives a lot of output, but it may help track what is
 going on.
 
@@ -117,9 +129,9 @@ They may contain digits, and they may end in any number of `'`.
 
 ### Constants
 
-* Boolean constants: `true`, `false`
-* Integer constants are written in decimal
-* Real constants are written in floating-point format.
+- Boolean constants: `true`, `false`
+- Integer constants are written in decimal
+- Real constants are written in floating-point format.
 
 Note that `42` is always an integer, and `42.0` is always a real. There is no automatic
 conversion from integers to reals.
@@ -214,7 +226,6 @@ A **parallel** version of `var` is
     and xᵢ = eᵢ in
       c
 
-
 ### Assignment
 
 A variable is assigned to as
@@ -269,6 +280,3 @@ Because Clerical has no subtyping and no polymorphism, we cannot use the same op
 two functions. Consequently, we follow the following convention: infix operations such as
 `+`, `-`, `*` act on integers. To have them act on reals, place a period after them, e.g.,
 `+.`, `-.`, `*.`. (Yes, this is annoying.)
-
-
-
