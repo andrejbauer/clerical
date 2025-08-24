@@ -11,9 +11,10 @@ These are the commands you can put in a `.real` file or type into the interactiv
 
 The datatypes are
 
-* `bool` – booleans `true` and `false`
-* `int` – integers (implemented using GMP large integers)
-* `real` – real numbers (using MPFR for arbitrary precision)
+- `bool` – booleans `true` and `false`
+- `int` – integers (implemented using GMP large integers)
+- `real` – real numbers (using MPFR for arbitrary precision)
+- `t[]` – array of values of type `t`
 
 ### Function definition
 
@@ -33,7 +34,20 @@ The return type of `⟨functionName⟩` is computed automatically. Example:
          end ;
          p
 
-Functions may *not* be recursive, but they may refer to previously defined functions.
+In this extended implementation of Clerical, functions may be recursive.
+For mutual recursion use the syntax from the following example:
+
+```
+function real batman(int k, real x, real y):
+  if k == 0 then
+    x *. y
+  else
+    robin (k - 1, x +. y)
+  end
+
+and function real robin(int k, real z):
+  batman(k, 1.0 /. z, 2.0)
+```
 
 ### External declarations
 
@@ -43,14 +57,13 @@ To extend Clerical with a new primitive function, define its OCaml implementatio
 
 where:
 
-* `⟨funcName⟩` is the name of the function in Clerical (you may use infix operators if
-you put them in parentheses),
-* `⟨ty1⟩`, .., `⟨tyN⟩` are types of arguments,
-* `⟨ty_ret⟩` is the return type,
-* `⟨str⟩` is the string identifier of the OCaml definition.
+- `⟨funcName⟩` is the name of the function in Clerical (you may use infix operators if
+  you put them in parentheses),
+- `⟨ty1⟩`, .., `⟨tyN⟩` are types of arguments,
+- `⟨ty_ret⟩` is the return type,
+- `⟨str⟩` is the string identifier of the OCaml definition.
 
 Please consult `src/external.ml` and `prelude.real` for examples.
-
 
 ### Runinng a command
 
@@ -58,18 +71,27 @@ The toplevel command
 
     do ⟨cmd⟩
 
-evaluates command `⟨cmd⟩`. For example:
+evaluates the command `⟨cmd⟩`. For example:
 
     do 1.0 +. 3.0
 
 ### Setting precision
 
-You can set the *output* precision at which a toplevel command prints reals with
+You can set the _output_ precision at which a toplevel command prints reals with
 
     precision ⟨int⟩
 
 where `⟨int⟩` is the number of bits that must be correct. Note that setting higher
 precision will of course require more computation.
+
+### Setting the number of CPU cores
+
+TThe toplevel command
+
+    domains ⟨num⟩
+
+sets the number of CPU cores to be used in parallel computation to `⟨num⟩`.
+By default, Clerical uses all cores except one.
 
 ### Loading a file
 
@@ -80,13 +102,21 @@ You may load a file into Clerical with
 Alternatively, you can load it on the command line with `-l` option. Run Clerical with
 `--help` to see other command-line options.
 
+### Timing
+
+The toplevel command
+
+    time ⟨cmd⟩
+
+evaluates the command `⟨cmd⟩` and reports how long the evaluation took. This is useful for rudimentary benchmarking.
+
 ## Support for debugging
 
 Anywhere in your code you may run the command `trace` which behaves exactly like `skip`
 (see below), except that it also prints out the current source position, precision, and
 values of all variables.
 
-If you use the command-line opton `--trace`, a trace will be printed for *every*
+If you use the command-line opton `--trace`, a trace will be printed for _every_
 expression that is evaluated. This gives a lot of output, but it may help track what is
 going on.
 
@@ -99,9 +129,9 @@ They may contain digits, and they may end in any number of `'`.
 
 ### Constants
 
-* Boolean constants: `true`, `false`
-* Integer constants are written in decimal
-* Real constants are written in floating-point format.
+- Boolean constants: `true`, `false`
+- Integer constants are written in decimal
+- Real constants are written in floating-point format.
 
 Note that `42` is always an integer, and `42.0` is always a real. There is no automatic
 conversion from integers to reals.
@@ -114,6 +144,8 @@ The prelude defines a function `real` that takes an integer and returns a real.
 
 The prelude defines a function `int` that takes a real and returns an integer
 that is within 1 of the real.
+
+Note: standard rounding functions such as `floor` and `ceil` are not computable.
 
 ### Command `skip`
 
@@ -164,6 +196,16 @@ Local definitions are introduced as
 
 The definitions are valid in `c`.
 
+A parallel local definition
+
+    plet x₁ = e₁
+    and x₂ = e₂
+    ...
+    and xᵢ = eᵢ in
+      c
+
+is like `let`, except that it evaluates the expressions `e₁, ..., eᵢ` in parallel.
+
 ### Local variables (mutable)
 
 Local variables are introduced as
@@ -175,6 +217,14 @@ Local variables are introduced as
       c
 
 The variables are valid in `c`.
+
+A **parallel** version of `var` is
+
+    pvar x₁ = e₁
+    and x₂ = e₂
+    ...
+    and xᵢ = eᵢ in
+      c
 
 ### Assignment
 
@@ -189,6 +239,24 @@ A limit of a sequence is defined as
     lim n => e
 
 where `e` must evaluate to a term which is within distance `2⁻ⁿ` of `n`.
+
+### Arrays
+
+The elements of a non-empty array may be listed as
+
+    [e₁, ⋯, eᵢ]
+
+The construction
+
+    array[e₁] i => e₂
+
+creates an array of size `e₁` and initializes the `i`-th element of array with `e₂`,
+where the variable `i` is bound in `e₂`.
+
+The `e₂`-th element of an array `e₁` is accessed as `e₁[e₂]`.
+
+Note: at the time of writing this documentation, all arrays are read-only. Hopefully we will
+remember to updated this section when we introduce assignment to arrays.
 
 ### Function application
 
@@ -212,6 +280,3 @@ Because Clerical has no subtyping and no polymorphism, we cannot use the same op
 two functions. Consequently, we follow the following convention: infix operations such as
 `+`, `-`, `*` act on integers. To have them act on reals, place a period after them, e.g.,
 `+.`, `-.`, `*.`. (Yes, this is annoying.)
-
-
-

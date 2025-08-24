@@ -1,0 +1,150 @@
+function real prec(int x):
+  1.0 /. real(shift(1, x))
+
+function real abs(real x):
+  lim n =>
+    case
+      x <. prec (n + 1) => real (0) -. x
+    | x >. real (0) -. prec (n + 1) => x
+    end
+
+function bool bound(real x, real d):
+  case
+    abs(x) <. d => true
+  | abs(x) >. d /. real(2) => false
+  end
+
+function bool nbound(real x, real d):
+  if bound(x, d) then false else true end
+
+
+
+function real sin (real x):
+  lim p =>
+    var epsilon := prec(p)
+    and m := 0
+    and s := real(1)
+    and A := real(0)
+    and q := x in
+    while nbound (q, epsilon)
+    do
+      m := m + 1;
+      A := A +. q *. s;
+      s := s *. real(-1);
+      q := q *. x *. x /. real(2 * m + 1) /. real(2 * m)
+    end; A
+
+function real pow(real x, int n):
+  var p := 1.0 and
+  i := 0 in
+  while i < n do
+    p := p *. x;
+    i := i + 1
+  end;
+  p
+
+function real e (real x):
+  lim n =>
+    let err = shift(1, n) in
+    var i := 1
+    and e := 0.0
+    and f := 1
+    and rerr := real(err) in
+    while bound(real(f) /. pow(x, i - 1), rerr) do
+    (*while real(f) /. pow(x, i - 1)<. real(err) do*)
+      e := e +. pow(x, i - 1) /. real(f) ;
+      f := f * i ;
+      i := i + 1
+    end ;
+    e
+
+function real pi ():
+  lim n =>
+    var k := 0
+    and a := real(3)
+    and b := real(4) in
+    while k < n
+    do
+      var x := (a +. b) /. real(2) in
+      if
+        real (0) <. sin (x)
+      then
+        a := x
+      else
+        b := x
+      end
+      ;
+      k := k + 1
+    end; (a +. b) /. real(2)
+
+
+function real square(real x, real c):
+  x *. x -. c
+
+function real sqrt (real a, real b, real c):
+  lim n =>
+    var k := 0
+    and a := a
+    and b := b in
+    while k < n
+    do
+      var x := (a +. b) /. real(2) in
+      if
+        real (0) <. square (x, c)
+      then
+        b := x
+      else
+        a := x
+      end
+      ;
+      k := k + 1
+    end; (a +. b) /. real(2)
+
+function real f(real x): exp(-1.0 *. x *. x /. 2.0)
+
+function int max_f'(): 1
+
+function real sum (int N):
+  let N' = real(N) in
+  var ys := (array [N] i => f ((real(i) +. 0.5) /. N'))
+  and sum := 0.0
+  and i := 0 in
+  while i < N do
+    sum := sum +. ys[i];
+    i := i + 1
+  end ;
+  sum /. N'
+
+function real integral ():
+  lim n =>
+    let N = max_f'() * shift(1, n) in
+    sum(N)
+
+
+function real demo ():
+  plet i = integral ()
+  and pi = pi () in
+  let s = sqrt(1.0, 10.0, 2.0 *. pi) in
+  2.0 *. i /. s
+
+function real integral_reduce(int start, int last, real N):
+  var sum := 0.0 in
+  if last - start < 1000 then
+    var i := start in
+    while i < last do
+      sum := sum +. f(real(i) /. N);
+      i := i + 1
+    end;
+    sum /. N
+  else
+    let mid = int((real(start) +. real(last)) /. 2.0) in
+    plet a = integral_reduce(start, mid, N)
+    and b = integral_reduce(mid, last, N) in
+    sum := a +. b;
+    sum
+  end
+
+function real integral2 ():
+  lim n =>
+    let N = shift(1, n) in
+    integral_reduce(0, N, real(N))
