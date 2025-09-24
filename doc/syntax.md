@@ -52,7 +52,7 @@ you put them in parentheses),
 Please consult `src/external.ml` and `prelude.real` for examples.
 
 
-### Runinng a command
+### Running a command
 
 The toplevel command
 
