@@ -1,54 +1,41 @@
 # Clerical
 
-An implementation of an imperative langauge for exact real number computation.
+An implementation of an imperative language for exact real number computation.
 
 ## Prerequisites
 
-To compile the OCaml implementation of Clerical and a sufficiently new version of OCaml (version 5.20 or later should work).
-You also need the following:
+Clerical requires OCaml 5.0.0 or later (tested with 5.0.0 and 5.2.0) and
+[opam](https://opam.ocaml.org).
 
-* the [MFPR](http://www.mpfr.org) library
-* the [Dune](https://dune.build) build system
-* the [Menhir](http://gallium.inria.fr/~fpottier/menhir/) OCaml parser generator
-* the Ocaml libraries `menhirLib`, `sedlex`, `mlgmpidl` and `picos`
-
-
-### OCaml & OPAM
-
-Follow [these instructions](https://www.ocaml.org/docs/up-and-running) for
-installing OCaml and the OCaml package manager OPAM.
-
-
-### MPFR
-
-The GNU multiple-precision floating-point library [MPFR]((http://www.mpfr.org))
-is aviable through various package managers. On MacOS you can install it using
+The system-level (non-opam) dependency is the GNU multiple-precision
+floating-point library [MPFR](http://www.mpfr.org). On macOS install it with
 [Homebrew](https://brew.sh):
 
     brew install mpfr
 
-### OCaml tools & libraries
+(it pulls in GMP). On Debian/Ubuntu, `apt install libmpfr-dev libgmp-dev`.
 
-Install OCaml tools and libraries with
+The opam packages Clerical depends on directly are:
 
-    opam install dune menhir sedlex mlgmpidl
+* [`dune`](https://dune.build) — build system
+* [`menhir`](http://gallium.inria.fr/~fpottier/menhir/) — parser generator (provides the `menhirLib` runtime)
+* [`sedlex`](https://github.com/ocaml-community/sedlex) — Unicode-aware lexer
+* [`mlgmpidl`](https://github.com/nberth/mlgmpidl) — OCaml bindings to GMP and MPFR
+* [`picos`](https://github.com/ocaml-multicore/picos), `picos_std`, `picos_mux` — structured concurrency
 
-### Picos library
+`clerical.opam` lists all of the above and pins the Picos packages to a specific
+upstream commit (current released Picos does not yet expose the
+`Run.first_or_terminate` primitive Clerical relies on). To install everything
+in one shot, from the project root:
 
-As of 2025-04-28 we need [Picos](https://github.com/ocaml-multicore/picos) library version 0.6 or later. If you are far enough in the future,
-you can install these with
+    opam install . --deps-only
 
-    opam install picos_std picos_mux
+If you prefer a project-local opam switch (recommended, keeps the toolchain
+isolated to this checkout):
 
-If not, you will have to use the development version from the repository. You get these by pinning them,
-as follows:
-
-    opam pin add picos     git+ssh://git@github.com/ocaml-multicore/picos.git
-    opam pin add picos_aux git+ssh://git@github.com/ocaml-multicore/picos.git
-    opam pin add picos_mux git+ssh://git@github.com/ocaml-multicore/picos.git
-    opam pin add picos_std git+ssh://git@github.com/ocaml-multicore/picos.git
-
-Good luck!
+    opam switch create . 5.2.0
+    eval $(opam env)
+    opam install . --deps-only
 
 ## Compilation
 
@@ -56,10 +43,10 @@ To compile Clerical, run the following command in the Clerical directory:
 
     dune build
 
-Dune compiles the program and creates the executable `clerical.exe` (also on MacOS and Linux). You can run it with:
+Dune compiles the program and creates the executable `clerical.exe`. You can
+run it with:
 
     ./clerical.exe --prelude prelude.real
-
 
 ## Unit testing
 
@@ -71,16 +58,16 @@ and validate tests with
 
     dune promote
 
-See [Writting and running tests](https://dune.readthedocs.io/en/stable/tests.html) section of Dune documentation for
-further information on unit testing.
+See [Writing and running tests](https://dune.readthedocs.io/en/stable/tests.html)
+section of the Dune documentation for further information.
 
 ## Repository structure
 
-The structure of the repository:
-
-* `src` – the OCaml implementation of Clerical
+* `bin` – the `clerical` executable entry point
+* `lib` – the OCaml implementation, split into `parsing`, `typing`, `reals`, `runtime`, `util`
 * `examples` – examples of Clerical programs
 * `doc` – documentation
+* `prelude.real` – built-in functions and operators loaded by default
 
 ## Clerical syntax
 

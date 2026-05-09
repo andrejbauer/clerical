@@ -12,8 +12,22 @@ license: "MIT"
 homepage: "https://github.com/andrejbauer/clerical"
 bug-reports: "https://github.com/andrejbauer/clerical/issues"
 dev-repo: "git+https://github.com/andrejbauer/clerical.git"
-depends: [ "ocaml" "dune" "zarith" "mlmpfr" "sedlex"]
-build: [
-  [make]
+depends: [
+  "ocaml" {>= "5.0.0"}
+  "dune" {>= "3.7"}
+  "menhir"
+  "sedlex"
+  "mlgmpidl"
+  "picos"
+  "picos_std"
+  "picos_mux"
 ]
-install: [make "install"]
+pin-depends: [
+  ["picos.dev" "git+https://github.com/ocaml-multicore/picos.git#5d7e5581462babc241d577eddc84aeceecbb2073"]
+  ["picos_aux.dev" "git+https://github.com/ocaml-multicore/picos.git#5d7e5581462babc241d577eddc84aeceecbb2073"]
+  ["picos_std.dev" "git+https://github.com/ocaml-multicore/picos.git#5d7e5581462babc241d577eddc84aeceecbb2073"]
+  ["picos_mux.dev" "git+https://github.com/ocaml-multicore/picos.git#5d7e5581462babc241d577eddc84aeceecbb2073"]
+]
+build: [
+  ["dune" "build" "-p" name "-j" jobs]
+]
