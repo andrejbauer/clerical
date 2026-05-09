@@ -7,11 +7,11 @@ An imperative programming language for infinite-precision real numbers
 with guarded non-determinism and limit operator.
 """
 maintainer: "Andrej Bauer <andrej.bauer@andrej.com>"
-authors: "Andrej Bauer <andrej.bauer>"
-license: "MIT License"
+authors: "Andrej Bauer <andrej.bauer@andrej.com>"
+license: "MIT"
 homepage: "https://github.com/andrejbauer/clerical"
-bug-reports: ""
-dev-repo: "https://github.com/andrejbauer/clerical"
+bug-reports: "https://github.com/andrejbauer/clerical/issues"
+dev-repo: "git+https://github.com/andrejbauer/clerical.git"
 depends: [ "ocaml" "dune" "zarith" "mlmpfr" "sedlex"]
 build: [
   [make]
