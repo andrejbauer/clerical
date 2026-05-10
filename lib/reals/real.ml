@@ -5,10 +5,7 @@
     back-to-front intervals. It uses Kaucher multiplication for back-to-front
     intervals. Infinity and negative infinity are allowed as endpoints.
 
-    Note: we broke back-to-front intervals in the following functions:
-    abs
-*)
-
+    Note: we broke back-to-front intervals in the following functions: abs *)
 
 let down = Dyadic.down
 let up = Dyadic.up
@@ -91,17 +88,18 @@ let neg ~prec ~round i =
 
 (* TODO: We should fix this one to work with Kaucher intervals *)
 let abs ~prec ~round i =
-  if Mpfr.sgn (lower i) >= 0 then
-    i
-  else if Mpfr.sgn (upper i) <= 0 then
-    neg ~prec ~round i
+  if Mpfr.sgn (lower i) >= 0 then i
+  else if Mpfr.sgn (upper i) <= 0 then neg ~prec ~round i
   else
     (* TODO: We are relying on MFPR not changing the sign when rounding to a lower precision. *)
     let l = Dyadic.neg ~prec ~round (lower i) in
-    {
-      lower = Dyadic.zero;
-      upper = Dyadic.max l (upper i)
-    }
+    { lower = Dyadic.zero; upper = Dyadic.max l (upper i) }
+
+let exp ~prec ~round i =
+  {
+    lower = Dyadic.exp ~prec ~round (lower i);
+    upper = Dyadic.exp ~prec ~round (upper i);
+  }
 
 (** Kaucher multiplication of intervals is given by the following table.
 

@@ -171,7 +171,10 @@ let externals : (string * entry) list =
     make_RRB "<." (fun ~prec r1 r2 -> real_cmp r1 r2 < 0);
     make_RRB ">." (fun ~prec r1 r2 -> real_cmp r1 r2 > 0);
     make_III "shift" shift;
-    make_RR "abs" (fun ~prec r -> Real.abs ~prec:prec.Run.prec_mpfr ~round:Real.down r);
+    make_RR "abs" (fun ~prec r ->
+        Real.abs ~prec:prec.Run.prec_mpfr ~round:Real.down r);
+    make_RR "exp" (fun ~prec r ->
+        Real.exp ~prec:prec.Run.prec_mpfr ~round:Real.down r);
   ]
 
 let lookup s = try Some (List.assoc s externals) with Not_found -> None

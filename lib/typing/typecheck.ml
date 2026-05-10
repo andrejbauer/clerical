@@ -24,7 +24,7 @@ let push_rw dt ctx = { ctx with frame = RW dt :: ctx.frame }
 let push_ro dt ctx = { ctx with frame = RO dt :: ctx.frame }
 
 (** Define a new function. *)
-let push_fun ft ctx = { ctx with funs = ctx.funs @ [ft]  }
+let push_fun ft ctx = { ctx with funs = ctx.funs @ [ ft ] }
 
 let push_args xts ctx =
   List.fold_left (fun ctx (_, dt) -> push_ro dt ctx) (make_ro ctx) xts
@@ -37,6 +37,8 @@ type type_error =
   | InvalidAssign
   | ValueExpected
   | InvalidDomains
+  | EmptyArrayEnum
+  | ArrayExpected
 
 exception Error of type_error Location.located
 
@@ -57,6 +59,12 @@ let print_error err ppf =
   | ValueExpected -> Format.fprintf ppf "expected a value but got a command"
   | InvalidDomains ->
       Format.fprintf ppf "the number of domains must be between 1 and 128"
+  | EmptyArrayEnum ->
+      Format.fprintf ppf
+        "an empty array [] is not allowed, use (array[0] i => ...) instead"
+  | ArrayExpected ->
+      Format.fprintf ppf
+        "an empty array [] is not allowed, use (array[0] i => ...) instead"
 
 (** Lookup the type of an identifier *)
 let lookup_val k { frame; frames; _ } =
@@ -95,6 +103,7 @@ let lookup_fun j { funs; _ } =
   in
   lookup j funs
 
+(** Infer the type of a read-write computation. *)
 let rec comp ctx { Location.data = c; loc } =
   match c with
   | Syntax.Var k -> Type.Cmd (lookup_val k ctx)
@@ -102,13 +111,13 @@ let rec comp ctx { Location.data = c; loc } =
   | Syntax.Integer _ -> Type.(Cmd Integer)
   | Syntax.Float _ -> Type.(Cmd Real)
   | Syntax.And (c1, c2) ->
-    check_expr ctx Type.Boolean c1 ;
-    check_expr ctx Type.Boolean c2 ;
-    Type.(Cmd Boolean)
+      check_expr ctx Type.Boolean c1;
+      check_expr ctx Type.Boolean c2;
+      Type.(Cmd Boolean)
   | Syntax.Or (c1, c2) ->
-    check_expr ctx Type.Boolean c1 ;
-    check_expr ctx Type.Boolean c2 ;
-    Type.(Cmd Boolean)
+      check_expr ctx Type.Boolean c1;
+      check_expr ctx Type.Boolean c2;
+      Type.(Cmd Boolean)
   | Syntax.Apply (k, args) ->
       let t_args, t_ret = lookup_fun k ctx in
       check_args ~loc ctx t_args args;
@@ -160,18 +169,47 @@ let rec comp ctx { Location.data = c; loc } =
   | Syntax.Lim (_, e) ->
       let ctx = push_ro Type.Integer ctx in
       check_expr ctx Type.Real e;
-      Type.Cmd Type.Real
+      Type.(Cmd Real)
+  | Syntax.ArrayEnum [] -> error ~loc EmptyArrayEnum
+  | Syntax.ArrayEnum (e :: es) ->
+      let dt = expr ctx e in
+      List.iter (check_expr ctx dt) es;
+      Type.(Cmd (Array dt))
+  | Syntax.ArrayInit (e1, _, e2) ->
+      check_expr ctx Type.Integer e1;
+      let ctx = push_ro Type.Integer ctx in
+      let dt = expr ctx e2 in
+      Type.(Cmd (Array dt))
+  | Syntax.ArrayIndex (e1, e2) ->
+      let dt = check_array ctx e1 in
+      check_expr ctx Type.Integer e2;
+      Type.Cmd dt
+  | Syntax.ArrayLen e ->
+      let _ = check_array ctx e in
+      Type.(Cmd Integer)
 
+(** Infer the type of an expression (read-only computation). *)
 and expr ctx c =
   let (Type.Cmd dt) = comp (make_ro ctx) c in
   dt
 
+(** Check that a read-write computation has the given type. *)
 and check_comp ctx (Type.Cmd t) c =
   let (Type.Cmd t') = comp ctx c in
   if t <> t' then error ~loc:c.Location.loc (TypeMismatch (t, t'))
 
+(** Check that an expression (read-only computation) has the given type. *)
 and check_expr ctx dt c = check_comp ctx (Type.Cmd dt) c
 
+(** Check that a read-only computation is an array and return the type of the
+    array elements. *)
+and check_array ctx e =
+  match expr ctx e with
+  | Type.Array dt -> dt
+  | Type.(Boolean | Integer | Real | Unit) ->
+      error ~loc:e.Location.loc ArrayExpected
+
+(** Check that the arguments of a function have the given types. *)
 and check_args ~loc ctx dts cs =
   let rec fold dts' cs' =
     match (dts', cs') with
@@ -206,11 +244,18 @@ and newvar_clauses ctx lst =
 
 let check_fundefs ctx lst =
   let ctx_fs =
-    List.fold_left (fun ctx Location.{data=(_, xts, _, t);_} -> push_fun (List.map snd xts, t) ctx) ctx lst
+    List.fold_left
+      (fun ctx Location.{ data = _, xts, _, t; _ } ->
+        push_fun (List.map snd xts, t) ctx)
+      ctx lst
   in
-  List.iter (fun Location.{data=(_, xts, c, t);_} -> check_comp (push_args xts ctx_fs) t c) lst ;
+  List.iter
+    (fun Location.{ data = _, xts, c, t; _ } ->
+      check_comp (push_args xts ctx_fs) t c)
+    lst;
   ctx_fs
 
+(** Typecheck a toplevel directive. *)
 let rec toplevel ctx { Location.data = tc; loc } =
   let ctx, tc =
     match tc with
@@ -221,8 +266,8 @@ let rec toplevel ctx { Location.data = tc; loc } =
         let t = comp ctx c in
         (ctx, Syntax.TyTopTime (c, t))
     | Syntax.TopFunctions lst ->
-      let ctx = check_fundefs ctx lst in
-      (ctx, Syntax.TyTopFunctions lst)
+        let ctx = check_fundefs ctx lst in
+        (ctx, Syntax.TyTopFunctions lst)
     | Syntax.TopExternal (f, s, ft) ->
         let ctx = push_fun ft ctx in
         (ctx, Syntax.TyTopExternal (f, s, ft))

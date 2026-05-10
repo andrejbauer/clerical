@@ -7,4 +7,5 @@
   (pps sedlex.ppx)))
 
 (menhir
+ (explain true)
  (modules parser))

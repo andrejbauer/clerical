@@ -3,6 +3,7 @@ open Parser
 let reserved =
   [
     ("and", AND);
+    ("array", ARRAY);
     ("begin", BEGIN);
     ("bool", BOOL);
     ("case", CASE);
@@ -16,6 +17,7 @@ let reserved =
     ("if", IF);
     ("in", IN);
     ("int", INT);
+    ("len", LEN);
     ("let", LET);
     ("plet", PLET);
     ("lim", LIM);
@@ -116,6 +118,12 @@ and token_aux ({ Ulexbuf.stream; _ } as lexbuf) =
   | ')' ->
       f ();
       RPAREN
+  | '[' ->
+      f ();
+      LBRACK
+  | ']' ->
+      f ();
+      RBRACK
   | '|' ->
       f ();
       BAR
@@ -145,12 +153,14 @@ and token_aux ({ Ulexbuf.stream; _ } as lexbuf) =
   | prefixop ->
       f ();
       PREFIXOP (Ulexbuf.lexeme lexbuf, loc_of lexbuf)
-  | "&&" -> (* must come before infixop0 *)
-     f ();
-     ANDAND
-  | "||" -> (* must come before infixop0 *)
-     f ();
-     OROR
+  | "&&" ->
+      (* must come before infixop0 *)
+      f ();
+      ANDAND
+  | "||" ->
+      (* must come before infixop0 *)
+      f ();
+      OROR
   | infixop0 ->
       f ();
       INFIXOP0 (Ulexbuf.lexeme lexbuf, loc_of lexbuf)

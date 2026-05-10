@@ -43,3 +43,4 @@ external ( >. ) : (real, real) -> bool = ">."
 
 (* Absolute value *)
 external abs : (real) -> real = "abs"
+external exp : (real) -> real = "exp"

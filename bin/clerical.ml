@@ -41,7 +41,8 @@ let options =
         "<int> Set maximum precision for MPFR" );
       ( "--domains",
         Arg.Int (fun k -> Config.domains := Some k),
-        "<int> Set number of domains (CPU cores for parallel execution)" );
+        Format.sprintf "<int> Set number of domains (CPU cores for parallel execution, recommended %d)"
+        (Runtime.Parallel.recommended_domains ()));
       ( "--out-prec",
         Arg.Set_int Config.out_prec,
         "<int> Set precision for printing reals at top level" );
